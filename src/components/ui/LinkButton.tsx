@@ -3,6 +3,7 @@ import { buttonVariants } from "./button";
 
 import { cn } from "./lib/utils";
 import { Link, LinkProps } from "react-router-dom";
+import { SheetClose } from "./sheet";
 
 interface LinkButtonProps
   extends LinkProps,
@@ -22,6 +23,14 @@ function LinkButton({
     >
       {children}
     </Link>
+  );
+}
+
+export function SheetCloseLinkButton(props: LinkButtonProps) {
+  return (
+    <SheetClose asChild>
+      <LinkButton {...props} />
+    </SheetClose>
   );
 }
 
