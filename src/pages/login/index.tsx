@@ -8,7 +8,7 @@ function LoginPage() {
   return (
     <>
       <PageHeading heading="Log in">
-        <LinkButton to="/signup" size="sm" variant="secondary">
+        <LinkButton to="/signup" size="sm" variant="ghost">
           Or sign up
         </LinkButton>
       </PageHeading>
