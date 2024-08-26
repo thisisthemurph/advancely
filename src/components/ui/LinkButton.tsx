@@ -26,6 +26,9 @@ function LinkButton({
   );
 }
 
+/**
+ * SheetCloseLinkButton ensres the sheet in which the component is closed when the LinkButton is clicked.
+ */
 export function SheetCloseLinkButton(props: LinkButtonProps) {
   return (
     <SheetClose asChild>

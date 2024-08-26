@@ -6,11 +6,15 @@ import {
   SheetTrigger,
 } from "./ui/sheet";
 import { Button } from "./ui/button";
-import { SheetCloseLinkButton as LinkButton } from "./ui/LinkButton";
+import LinkButton, {
+  SheetCloseLinkButton as SheetLinkButton,
+} from "./ui/LinkButton";
 import { Card } from "./ui/card";
 import { Link, LinkProps } from "react-router-dom";
 import clsx from "clsx";
 import Logo from "./ui/Logo";
+
+import { useMediaQuery } from "usehooks-ts";
 
 const cardMenuItems: CardLinkProps[] = [
   {
@@ -32,11 +36,47 @@ const cardMenuItems: CardLinkProps[] = [
   },
 ];
 
+function Navigation() {
+  const isDesktop = useMediaQuery("(min-width: 640px)");
+
+  if (isDesktop) {
+    return <DesktopNavigation />;
+  }
+
+  return <MobileNavigation />;
+}
+
+function DesktopNavigation() {
+  return (
+    <nav className="flex items-center gap-8">
+      <ul className="space-x-8">
+        {cardMenuItems.map((link, index) => (
+          <Link
+            key={index}
+            to={link.href}
+            className="text-slate-800 hover:text-purple-500 transition-colors"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </ul>
+      <div className="flex gap-2">
+        <LinkButton to="/login" variant="outline" size="sm">
+          Log in
+        </LinkButton>
+        <LinkButton to="/signup" size="sm">
+          Sign up
+        </LinkButton>
+      </div>
+    </nav>
+  );
+}
+
 function MobileNavigation() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="top-3 right-3 fixed">
+        <Button variant="ghost" size="icon" className="top-3 right-3 fixed">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -66,12 +106,12 @@ function MobileNavigation() {
             ))}
           </div>
           <div className="flex justify-between gap-4">
-            <LinkButton to="/login" variant="outline" className="grow">
+            <SheetLinkButton to="/login" variant="outline" className="grow">
               Log in
-            </LinkButton>
-            <LinkButton to="/signup" className="grow">
+            </SheetLinkButton>
+            <SheetLinkButton to="/signup" className="grow">
               Sign up
-            </LinkButton>
+            </SheetLinkButton>
           </div>
         </div>
       </SheetContent>
@@ -112,4 +152,4 @@ function CardLink({ label, description, href, fullWidth }: CardLinkProps) {
   );
 }
 
-export default MobileNavigation;
+export default Navigation;
