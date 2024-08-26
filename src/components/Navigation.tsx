@@ -145,7 +145,7 @@ function CardLink({ label, description, href, fullWidth }: CardLinkProps) {
       <SheetClose asChild>
         <Link to={href} className="flex flex-col gap-2 p-4 w-full">
           <p className="text-xl">{label}</p>
-          <p className="text-slate-600">{description}</p>
+          <p className="text-slate-600 text-sm">{description}</p>
         </Link>
       </SheetClose>
     </Card>
