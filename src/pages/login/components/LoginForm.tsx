@@ -49,7 +49,7 @@ function LoginForm() {
                 <Input
                   autoFocus={true}
                   type="email"
-                  placeholder="you@email.com"
+                  placeholder="you@yourcompany.com"
                   {...field}
                 />
               </FormControl>

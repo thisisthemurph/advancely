@@ -10,6 +10,8 @@ import {
   useFormContext,
 } from "react-hook-form";
 
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
+
 import { cn } from "./lib/utils";
 import { Label } from "./label";
 
@@ -86,17 +88,31 @@ FormItem.displayName = "FormItem";
 
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
->(({ className, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & {
+    infoText?: string;
+  }
+>(({ className, infoText, children, ...props }, ref) => {
   const { error, formItemId } = useFormField();
 
   return (
     <Label
       ref={ref}
-      className={cn(error && "text-destructive", className)}
+      className={cn(
+        error && "text-destructive",
+        infoText && "flex justify-between items-end",
+        className
+      )}
       htmlFor={formItemId}
       {...props}
-    />
+    >
+      {children}
+      {infoText && (
+        <Popover>
+          <PopoverTrigger className="bg-yellow-500 rounded-full w-2 h-2 hover:scale-150 mr-1"></PopoverTrigger>
+          <PopoverContent>{infoText}</PopoverContent>
+        </Popover>
+      )}
+    </Label>
   );
 });
 FormLabel.displayName = "FormLabel";

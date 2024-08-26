@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Input } from "../../../components/ui/input";
@@ -12,6 +12,7 @@ import {
   FormLabel,
   FormMessage,
 } from "../../../components/ui/form";
+import { useState } from "react";
 
 const formSchema = z.object({
   name: z.string().min(4, {
@@ -25,7 +26,16 @@ const formSchema = z.object({
 
 type FormInputs = z.infer<typeof formSchema>;
 
+const CompanyNameInfo =
+  "Set the name of your company, this is the name all of your employees will see themselves under when they sign in.";
+const EmailInfo =
+  "The email address used here will be considered a super admin account and will have permissions to create, read, update, and delete all content. Permissions can be tailored later to give other users different privilages.";
+
 function SignupForm() {
+  const [emailPlaceholder, setEmailPlaceholder] = useState(
+    "your.name@company.com"
+  );
+
   const form = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -39,6 +49,12 @@ function SignupForm() {
     console.log(values);
   }
 
+  function onCompanyNameChange(form: UseFormReturn<FormInputs>) {
+    const companyName = form.getValues("name");
+    const email = `your.name@${companyName}.com`;
+    setEmailPlaceholder(email.toLowerCase().replace(" ", ""));
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -47,8 +63,8 @@ function SignupForm() {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Company name</FormLabel>
-              <FormControl>
+              <FormLabel infoText={CompanyNameInfo}>Company name</FormLabel>
+              <FormControl onChange={() => onCompanyNameChange(form)}>
                 <Input
                   autoFocus={true}
                   placeholder="Your Company LTD"
@@ -64,9 +80,11 @@ function SignupForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel infoText={EmailInfo}>
+                <span>Email</span>
+              </FormLabel>
               <FormControl>
-                <Input type="email" placeholder="you@email.com" {...field} />
+                <Input type="email" placeholder={emailPlaceholder} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
