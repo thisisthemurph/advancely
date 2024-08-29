@@ -7,6 +7,7 @@ import { Button } from "../../../components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -63,7 +64,7 @@ function SignupForm() {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel infoText={CompanyNameInfo}>Company name</FormLabel>
+              <FormLabel infoText={EmailInfo}>Company name</FormLabel>
               <FormControl onChange={() => onCompanyNameChange(form)}>
                 <Input
                   autoFocus={true}
@@ -72,6 +73,9 @@ function SignupForm() {
                 />
               </FormControl>
               <FormMessage />
+              <FormDescription className="hidden">
+                {CompanyNameInfo}
+              </FormDescription>
             </FormItem>
           )}
         />
@@ -87,6 +91,7 @@ function SignupForm() {
                 <Input type="email" placeholder={emailPlaceholder} {...field} />
               </FormControl>
               <FormMessage />
+              <FormDescription className="hidden">{EmailInfo}</FormDescription>
             </FormItem>
           )}
         />

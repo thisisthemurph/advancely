@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
 import { cn } from "./lib/utils";
 import { Label } from "./label";
+import { useId } from "react";
 
 const Form = FormProvider;
 
@@ -90,31 +91,40 @@ const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & {
     infoText?: string;
+    applyErrorStyles?: boolean;
   }
->(({ className, infoText, children, ...props }, ref) => {
-  const { error, formItemId } = useFormField();
+>(
+  (
+    { className, infoText, applyErrorStyles = false, children, ...props },
+    ref
+  ) => {
+    const { error, formItemId } = useFormField();
 
-  return (
-    <Label
-      ref={ref}
-      className={cn(
-        error && "text-destructive",
-        infoText && "flex justify-between items-end",
-        className
-      )}
-      htmlFor={formItemId}
-      {...props}
-    >
-      {children}
-      {infoText && (
-        <Popover>
-          <PopoverTrigger className="bg-yellow-500 rounded-full w-2 h-2 hover:scale-150 mr-1"></PopoverTrigger>
-          <PopoverContent>{infoText}</PopoverContent>
-        </Popover>
-      )}
-    </Label>
-  );
-});
+    return (
+      <Label
+        ref={ref}
+        className={cn(
+          error && applyErrorStyles && "text-destructive font-normal",
+          infoText && "flex justify-between items-end",
+          className
+        )}
+        htmlFor={formItemId}
+        {...props}
+      >
+        {children}
+        {infoText && (
+          <Popover>
+            <PopoverTrigger
+              className="bg-yellow-500 rounded-full w-2 h-2 hover:scale-150 mr-1"
+              aria-label="more information"
+            ></PopoverTrigger>
+            <PopoverContent>{infoText}</PopoverContent>
+          </Popover>
+        )}
+      </Label>
+    );
+  }
+);
 FormLabel.displayName = "FormLabel";
 
 const FormControl = React.forwardRef<
