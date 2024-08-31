@@ -27,7 +27,7 @@ func NewApp() *App {
 	}
 }
 
-func (app *App) Start() {
+func (app *App) Build() {
 	app.Supabase = supabase.CreateClient(app.Config.Supabase.URL, app.Config.Supabase.PublicKey)
 
 	s, err := store.NewStore(app.Config.Database.URI)

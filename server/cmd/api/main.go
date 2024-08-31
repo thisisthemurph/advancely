@@ -7,8 +7,8 @@ import (
 
 func main() {
 	app := application.NewApp()
-	app.Start()
+	app.Build()
 
-	e := routes.NewRouter(app)
-	e.Logger.Fatal(e.Start(app.Config.Host))
+	router := routes.NewRouter(app)
+	router.Logger.Fatal(router.Start(app.Config.Host))
 }
