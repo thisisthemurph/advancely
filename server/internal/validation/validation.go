@@ -22,7 +22,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 // Returns an HTTP error if binding or validation fails.
 func BindAndValidate(c echo.Context, i interface{}) error {
 	if err := c.Bind(i); err != nil {
-		return echo.NewHTTPError(400)
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 	if err := c.Validate(i); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
