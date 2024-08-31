@@ -19,6 +19,8 @@ const formSchema = z.object({
   name: z.string().min(4, {
     message: "Your company name should be at least 4 characters long",
   }),
+  firstName: z.string().min(1, "A first name must be provided"),
+  lastName: z.string().min(1, "A last name must be provided"),
   email: z.string().email(),
   password: z.string().min(6, {
     message: "Your password must be at least 6 characters long",
@@ -29,6 +31,8 @@ type FormInputs = z.infer<typeof formSchema>;
 
 const CompanyNameInfo =
   "Set the name of your company, this is the name all of your employees will see themselves under when they sign in.";
+const FirstNameInfo = "The first name of the initial admin user.";
+const LastNameInfo = "The last name of the initial admin user.";
 const EmailInfo =
   "The email address used here will be considered a super admin account and will have permissions to create, read, update, and delete all content. Permissions can be tailored later to give other users different privilages.";
 
@@ -41,6 +45,8 @@ function SignupForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
     },
@@ -75,6 +81,38 @@ function SignupForm() {
               <FormMessage />
               <FormDescription className="hidden">
                 {CompanyNameInfo}
+              </FormDescription>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="firstName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel infoText={FirstNameInfo}>First name</FormLabel>
+              <FormControl>
+                <Input type="text" placeholder="Your first name" {...field} />
+              </FormControl>
+              <FormMessage />
+              <FormDescription className="hidden">
+                {FirstNameInfo}
+              </FormDescription>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="lastName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel infoText={LastNameInfo}>Last name</FormLabel>
+              <FormControl>
+                <Input type="text" placeholder="Your last name" {...field} />
+              </FormControl>
+              <FormMessage />
+              <FormDescription className="hidden">
+                {LastNameInfo}
               </FormDescription>
             </FormItem>
           )}
