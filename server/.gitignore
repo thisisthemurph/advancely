@@ -1,6 +1,5 @@
 .env
-# Temp ignore Makefile
-Makefile
+bin
 
 # Binaries for programs and plugins
 *.exe
