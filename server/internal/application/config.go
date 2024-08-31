@@ -20,7 +20,9 @@ type ResendConfig struct {
 }
 
 type AppConfig struct {
-	Host     string
+	Host          string
+	ClientBaseURL string
+
 	Database DatabaseConfig
 	Supabase SupabaseConfig
 	Resend   ResendConfig
@@ -31,7 +33,9 @@ func NewAppConfig(get func(string) string) AppConfig {
 	autoMigrateOn, _ = strconv.ParseBool(get("AUTO_MIGRATE_ON"))
 
 	return AppConfig{
-		Host: get("LISTEN_ADDRESS"),
+		Host:          get("LISTEN_ADDRESS"),
+		ClientBaseURL: get("CLIENT_BASE_URL"),
+
 		Database: DatabaseConfig{
 			Name:          get("DATABASE_NAME"),
 			Password:      get("DATABASE_PASSWORD"),
