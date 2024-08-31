@@ -39,11 +39,11 @@ func (h AuthHandler) MakeRoutes(e *echo.Group) {
 // due to previous any previous errored runs.
 func (h AuthHandler) handleSignup() echo.HandlerFunc {
 	type formParams struct {
-		CompanyName   string `form:"name" validate:"required"`
-		UserFirstName string `form:"firstName" validate:"required"`
-		UserLastName  string `form:"lastName" validate:"required"`
-		UserEmail     string `form:"email" validate:"required,email"`
-		Password      string `form:"password" validate:"required,min=8"`
+		CompanyName   string `json:"name" validate:"required"`
+		UserFirstName string `json:"firstName" validate:"required"`
+		UserLastName  string `json:"lastName" validate:"required"`
+		UserEmail     string `json:"email" validate:"required,email"`
+		Password      string `json:"password" validate:"required,min=8"`
 	}
 
 	type UserMetadata struct {
