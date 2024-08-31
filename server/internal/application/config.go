@@ -1,8 +1,12 @@
 package application
 
+import "strconv"
+
 type DatabaseConfig struct {
-	Password string
-	URI      string
+	Name          string
+	Password      string
+	URI           string
+	AutoMigrateOn bool
 }
 
 type SupabaseConfig struct {
@@ -23,11 +27,16 @@ type AppConfig struct {
 }
 
 func NewAppConfig(get func(string) string) AppConfig {
+	var autoMigrateOn bool
+	autoMigrateOn, _ = strconv.ParseBool(get("AUTO_MIGRATE_ON"))
+
 	return AppConfig{
 		Host: get("LISTEN_ADDRESS"),
 		Database: DatabaseConfig{
-			Password: get("DATABASE_PASSWORD"),
-			URI:      get("DATABASE_URI"),
+			Name:          get("DATABASE_NAME"),
+			Password:      get("DATABASE_PASSWORD"),
+			URI:           get("DATABASE_URI"),
+			AutoMigrateOn: autoMigrateOn,
 		},
 		Supabase: SupabaseConfig{
 			URL:               get("SUPABASE_URL"),
