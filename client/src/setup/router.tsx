@@ -3,6 +3,7 @@ import Root from "../components/Root.tsx";
 import HomePage from "../pages/home/index.tsx";
 import LoginPage from "../pages/login/index.tsx";
 import SignupPage from "../pages/signup/index.tsx";
+import DashboardPage from "../pages/dashboard/index.tsx";
 
 export const router = createBrowserRouter([
   {
@@ -20,6 +21,10 @@ export const router = createBrowserRouter([
       {
         path: "/signup",
         element: <SignupPage />,
+      },
+      {
+        path: "/dashboard",
+        element: <DashboardPage />,
       },
     ],
   },
