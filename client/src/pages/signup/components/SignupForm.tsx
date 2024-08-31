@@ -1,6 +1,8 @@
-import { z } from "zod";
+import { useState } from "react";
 import { useForm, UseFormReturn } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
@@ -13,7 +15,14 @@ import {
   FormLabel,
   FormMessage,
 } from "../../../components/ui/form";
-import { useState } from "react";
+import { signup } from "../../../api/auth";
+
+const CompanyNameInfo =
+  "Set the name of your company, this is the name all of your employees will see themselves under when they sign in.";
+const FirstNameInfo = "The first name of the initial admin user.";
+const LastNameInfo = "The last name of the initial admin user.";
+const EmailInfo =
+  "The email address used here will be considered a super admin account and will have permissions to create, read, update, and delete all content. Permissions can be tailored later to give other users different privilages.";
 
 const formSchema = z.object({
   name: z.string().min(4, {
@@ -27,21 +36,18 @@ const formSchema = z.object({
   }),
 });
 
-type FormInputs = z.infer<typeof formSchema>;
+type FormSchema = z.infer<typeof formSchema>;
 
-const CompanyNameInfo =
-  "Set the name of your company, this is the name all of your employees will see themselves under when they sign in.";
-const FirstNameInfo = "The first name of the initial admin user.";
-const LastNameInfo = "The last name of the initial admin user.";
-const EmailInfo =
-  "The email address used here will be considered a super admin account and will have permissions to create, read, update, and delete all content. Permissions can be tailored later to give other users different privilages.";
+interface SignupFormParams {
+  onSignupComplete: () => void;
+}
 
-function SignupForm() {
+function SignupForm({ onSignupComplete }: SignupFormParams) {
   const [emailPlaceholder, setEmailPlaceholder] = useState(
     "your.name@company.com"
   );
 
-  const form = useForm<FormInputs>({
+  const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -52,12 +58,29 @@ function SignupForm() {
     },
   });
 
-  function onSubmit(values: FormInputs) {
-    console.log(values);
+  const { mutateAsync: signupMitation, isPending: isSignupPending } =
+    useMutation({
+      mutationFn: signup,
+      onSuccess: () => {
+        onSignupComplete();
+      },
+    });
+
+  async function onSubmit(values: FormSchema) {
+    try {
+      await signupMitation(values);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  function onCompanyNameChange(form: UseFormReturn<FormInputs>) {
+  function onCompanyNameChange(form: UseFormReturn<FormSchema>) {
     const companyName = form.getValues("name");
+    if (!companyName) {
+      setEmailPlaceholder("your.name@company.com");
+      return;
+    }
+
     const email = `your.name@${companyName}.com`;
     setEmailPlaceholder(email.toLowerCase().replace(" ", ""));
   }
@@ -150,7 +173,13 @@ function SignupForm() {
             </FormItem>
           )}
         />
-        <Button type="submit">Sign up</Button>
+        <Button
+          type="submit"
+          disabled={isSignupPending}
+          loading={isSignupPending}
+        >
+          Sign up
+        </Button>
       </form>
     </Form>
   );
