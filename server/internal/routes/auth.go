@@ -14,20 +14,30 @@ import (
 	"net/http"
 )
 
-type authHandler struct {
+func NewAuthHandler(sb *supabase.Client, s *store.Store) AuthHandler {
+	return AuthHandler{
+		Supabase:     sb,
+		UserStore:    s.UserStore,
+		CompanyStore: s.CompanyStore,
+	}
+}
+
+type AuthHandler struct {
 	Supabase     *supabase.Client
 	UserStore    contract.UserStore
 	CompanyStore contract.CompanyStore
+	group        *echo.Group
 }
 
-func newAuthRouter(e *echo.Echo, h authHandler) {
-	e.POST("/signup", h.handleSignup())
+func (h AuthHandler) MakeRoutes(e *echo.Group) {
+	group := e.Group("/auth")
+	group.POST("/signup", h.handleSignup())
 }
 
 // handleSignup signs the user up via Supabase and adds records to the companies and profiles tables.
 // This function handles instances where the auth.user, company and profile rows may already exist
 // due to previous any previous errored runs.
-func (h authHandler) handleSignup() echo.HandlerFunc {
+func (h AuthHandler) handleSignup() echo.HandlerFunc {
 	type formParams struct {
 		CompanyName   string `form:"name" validate:"required"`
 		UserFirstName string `form:"firstName" validate:"required"`
