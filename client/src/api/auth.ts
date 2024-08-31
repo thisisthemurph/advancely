@@ -1,4 +1,6 @@
-interface SignupRequest {
+import { ErrorResponseSchema } from "./api";
+
+export interface SignupRequest {
   name: string;
   firstName: string;
   lastName: string;
@@ -6,7 +8,7 @@ interface SignupRequest {
   password: string;
 }
 
-interface SignupResponse {
+export interface SignupResponse {
   id: string;
   firstName: string;
   lastName: string;
@@ -16,6 +18,11 @@ interface SignupResponse {
 
 export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
   const signupEndpoint = `${import.meta.env.VITE_API_BASE_URL}/auth/signup`;
+  const unknownSignupError = {
+    message:
+      "There has been an unknown error signing you up, please try again later.",
+  };
+
   const resp = await fetch(signupEndpoint, {
     method: "POST",
     headers: {
@@ -25,7 +32,15 @@ export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
   });
 
   if (!resp.ok) {
-    throw new Error("Error signing up");
+    const body = await resp.json();
+    const error = ErrorResponseSchema.safeParse(body);
+
+    if (error.success) {
+      return Promise.reject(error.data);
+    }
+    return Promise.reject(
+      body?.message ? { message: body.message } : unknownSignupError
+    );
   }
 
   return resp.json();
