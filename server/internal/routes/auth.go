@@ -151,3 +151,29 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 		})
 	}
 }
+
+func (h AuthHandler) handleVerifyEmailVerificationComplete() echo.HandlerFunc {
+	type Request struct {
+		Token string `json:"token" validate:"required"`
+	}
+
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		var req Request
+		if err := validation.BindAndValidate(c, &req); err != nil {
+			return err
+		}
+
+		user, err := h.Supabase.Auth.User(ctx, req.Token)
+		if err != nil || user == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
+		}
+
+		if user.ConfirmedAt.IsZero() {
+			return c.NoContent(http.StatusUnauthorized)
+		}
+
+		return c.NoContent(http.StatusNoContent)
+	}
+}

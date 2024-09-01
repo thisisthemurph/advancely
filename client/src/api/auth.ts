@@ -38,3 +38,21 @@ export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
 
   return resp.json();
 };
+
+export interface ConfirmEmailConfirmedRequest {
+  token: string;
+}
+
+export const checkEmailConfirmed = async (data: ConfirmEmailConfirmedRequest): Promise<boolean> => {
+  const endpoint = `${import.meta.env.VITE_API_BASE_URL}/auth/confirm-email`;
+
+  const resp = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  return resp.ok;
+}
