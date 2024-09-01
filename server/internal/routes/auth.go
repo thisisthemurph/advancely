@@ -32,6 +32,7 @@ type AuthHandler struct {
 func (h AuthHandler) MakeRoutes(e *echo.Group) {
 	group := e.Group("/auth")
 	group.POST("/signup", h.handleSignup())
+	group.POST("/confirm-email", h.handleVerifyEmailVerificationComplete())
 }
 
 // handleSignup signs the user up via Supabase and adds records to the companies and profiles tables.
