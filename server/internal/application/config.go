@@ -22,6 +22,7 @@ type ResendConfig struct {
 type AppConfig struct {
 	Host          string
 	ClientBaseURL string
+	SessionSecret string
 
 	Database DatabaseConfig
 	Supabase SupabaseConfig
@@ -35,6 +36,7 @@ func NewAppConfig(get func(string) string) AppConfig {
 	return AppConfig{
 		Host:          get("LISTEN_ADDRESS"),
 		ClientBaseURL: get("CLIENT_BASE_URL"),
+		SessionSecret: get("SESSION_SECRET"),
 
 		Database: DatabaseConfig{
 			Name:          get("DATABASE_NAME"),

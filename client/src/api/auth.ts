@@ -17,14 +17,15 @@ export interface SignupResponse {
 }
 
 export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
-  const signupEndpoint = `${import.meta.env.VITE_API_BASE_URL}/auth/signup`;
+  const endpoint = `${import.meta.env.VITE_API_BASE_URL}/auth/signup`;
 
-  const resp = await fetch(signupEndpoint, {
+  const resp = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
+    credentials: "include",
   });
 
   if (!resp.ok) {
@@ -39,11 +40,11 @@ export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
   return resp.json();
 };
 
-export interface ConfirmEmailConfirmedRequest {
+export interface CheckEmailConfirmedRequest {
   token: string;
 }
 
-export const checkEmailConfirmed = async (data: ConfirmEmailConfirmedRequest): Promise<boolean> => {
+export const checkEmailConfirmed = async (data: CheckEmailConfirmedRequest): Promise<boolean> => {
   const endpoint = `${import.meta.env.VITE_API_BASE_URL}/auth/confirm-email`;
 
   const resp = await fetch(endpoint, {
@@ -52,6 +53,7 @@ export const checkEmailConfirmed = async (data: ConfirmEmailConfirmedRequest): P
       "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
+    credentials: "include",
   });
 
   return resp.ok;

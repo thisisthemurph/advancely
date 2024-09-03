@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from "../../../components/ui/form";
 import { Input } from "../../../components/ui/input";
+import { useAuth } from "../../../hooks/useAuth.tsx";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -23,7 +24,13 @@ const formSchema = z.object({
 
 type FormInputs = z.infer<typeof formSchema>;
 
-function LoginForm() {
+interface LoginFormProps {
+  onSuccess: () => void;
+}
+
+function LoginForm({ onSuccess }: LoginFormProps) {
+  const auth = useAuth();
+
   const form = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -33,7 +40,10 @@ function LoginForm() {
   });
 
   function onSubmit(values: FormInputs) {
-    console.log(values);
+    auth.login(values).then((session) => {
+      console.log(session);
+      onSuccess();
+    }).catch(() => alert("error logging in"));
   }
 
   return (

@@ -3,8 +3,15 @@ import LinkButton from "../../components/ui/LinkButton";
 import Divider from "../../components/ui/Divider";
 import LoginForm from "./components/LoginForm";
 import LoginProviderButtons from "./components/LoginProviderButtons";
+import {useNavigate} from "react-router-dom";
 
 function LoginPage() {
+  const navigate = useNavigate();
+
+  const onLoginSuccess = () => {
+    navigate("/dashboard");
+  }
+
   return (
     <>
       <PageHeading heading="Log in">
@@ -12,7 +19,7 @@ function LoginPage() {
           Or sign up
         </LinkButton>
       </PageHeading>
-      <LoginForm />
+      <LoginForm onSuccess={onLoginSuccess} />
       <Divider text="or continue with" />
       <LoginProviderButtons />
     </>

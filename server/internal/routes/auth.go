@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"advancely/internal/auth"
 	"advancely/internal/model"
 	"advancely/internal/store"
 	"advancely/internal/store/contract"
@@ -14,30 +15,65 @@ import (
 	"net/http"
 )
 
-func NewAuthHandler(sb *supabase.Client, s *store.Store) AuthHandler {
+func NewAuthHandler(sb *supabase.Client, s *store.Store, sessionSecret string) AuthHandler {
 	return AuthHandler{
-		Supabase:     sb,
-		UserStore:    s.UserStore,
-		CompanyStore: s.CompanyStore,
+		Supabase:      sb,
+		UserStore:     s.UserStore,
+		CompanyStore:  s.CompanyStore,
+		SessionSecret: sessionSecret,
 	}
 }
 
 type AuthHandler struct {
-	Supabase     *supabase.Client
-	UserStore    contract.UserStore
-	CompanyStore contract.CompanyStore
-	group        *echo.Group
+	Supabase      *supabase.Client
+	UserStore     contract.UserStore
+	CompanyStore  contract.CompanyStore
+	SessionSecret string
 }
 
 func (h AuthHandler) MakeRoutes(e *echo.Group) {
 	group := e.Group("/auth")
+	group.POST("/login", h.handleLogin())
 	group.POST("/signup", h.handleSignup())
 	group.POST("/confirm-email", h.handleVerifyEmailVerificationComplete())
 }
 
+func (h AuthHandler) handleLogin() echo.HandlerFunc {
+	type Request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		user := auth.Session(c)
+		fmt.Println(user)
+
+		var req Request
+		if err := validation.BindAndValidate(c, &req); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		authDetails, err := h.Supabase.Auth.SignIn(ctx, supabase.UserCredentials{
+			Email:    req.Email,
+			Password: req.Password,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+
+		session := auth.NewSessionCookie(authDetails)
+		if err := session.SetCookie(c, h.SessionSecret); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+		return c.JSON(http.StatusOK, session)
+	}
+}
+
 // handleSignup signs the user up via Supabase and adds records to the companies and profiles tables.
 // This function handles instances where the auth.user, company and profile rows may already exist
-// due to previous any previous errored runs.
+// due to any previous errored runs.
 func (h AuthHandler) handleSignup() echo.HandlerFunc {
 	type formParams struct {
 		CompanyName   string `json:"name" validate:"required"`

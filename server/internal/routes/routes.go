@@ -1,8 +1,12 @@
 package routes
 
 import (
+	"net/http"
+
 	"advancely/internal/application"
+	mw "advancely/internal/middleware"
 	"advancely/internal/validation"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -15,11 +19,19 @@ type RouteMaker interface {
 func NewRouter(app *application.App) *echo.Echo {
 	e := echo.New()
 	e.Validator = validation.NewCustomValidator()
+
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{app.Config.ClientBaseURL},
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+		AllowMethods:     []string{http.MethodGet, http.MethodPost},
 		AllowCredentials: true,
 	}))
+
+	userMw := mw.NewUserMiddleware(app.Supabase, app.Config.SessionSecret)
+	e.Use(userMw.WithUserInContext)
 
 	baseGroup := e.Group("/api/v1")
 	for _, h := range getAPIHandlers(app) {
@@ -31,6 +43,6 @@ func NewRouter(app *application.App) *echo.Echo {
 
 func getAPIHandlers(app *application.App) []RouteMaker {
 	return []RouteMaker{
-		NewAuthHandler(app.Supabase, app.Store),
+		NewAuthHandler(app.Supabase, app.Store, app.Config.SessionSecret),
 	}
 }
