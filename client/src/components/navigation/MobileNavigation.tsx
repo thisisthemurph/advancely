@@ -16,30 +16,33 @@ import { SheetCloseLinkButton as SheetLinkButton } from "../ui/LinkButton";
 
 interface MobileNavigationProps {
   menuItems: NavLinks;
+  isAuthenticated: boolean;
 }
 
-const MobileNavigation = memo(({ menuItems }: MobileNavigationProps) => (
-  <Sheet>
-    <SheetTrigger asChild>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="top-3 right-3 fixed"
-        aria-label="open menu"
-      >
-        <HamburgerIcon />
-      </Button>
-    </SheetTrigger>
-    <SheetContent side="top" hideClose>
-      <SheetHeader>
-        <MobileNavLink to="/" className="mb-8">
-          <Logo />
-        </MobileNavLink>
-      </SheetHeader>
-      <MobileNavMenu items={menuItems} />
-    </SheetContent>
-  </Sheet>
-));
+const MobileNavigation = memo(({ menuItems, isAuthenticated }: MobileNavigationProps) => {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="top-3 right-3 fixed"
+          aria-label="open menu"
+        >
+          <HamburgerIcon />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="top" hideClose>
+        <SheetHeader>
+          <MobileNavLink to="/" className="mb-8">
+            <Logo />
+          </MobileNavLink>
+        </SheetHeader>
+        <MobileNavMenu items={menuItems} isAuthenticated={isAuthenticated} />
+      </SheetContent>
+    </Sheet>
+  )
+});
 
 function HamburgerIcon() {
   return (
@@ -61,7 +64,7 @@ function HamburgerIcon() {
   );
 }
 
-function MobileNavMenu({ items }: { items: NavLinks }) {
+function MobileNavMenu({ items, isAuthenticated }: { items: NavLinks, isAuthenticated: boolean }) {
   return (
     <div className="flex flex-col gap-8">
       <div className="gap-2 grid grid-cols-2">
@@ -69,16 +72,32 @@ function MobileNavMenu({ items }: { items: NavLinks }) {
           <CardLink key={link.label} {...link} />
         ))}
       </div>
-      <div className="flex justify-between gap-2">
-        <SheetLinkButton to="/login" variant="outline" className="grow">
-          Log in
-        </SheetLinkButton>
-        <SheetLinkButton to="/signup" className="grow">
-          Sign up
-        </SheetLinkButton>
-      </div>
+      <AdditionalButtons isAuthenticated={isAuthenticated} />
     </div>
   );
+}
+
+const AdditionalButtons = ({isAuthenticated}: {isAuthenticated: boolean}) => {
+  return (
+    <div className="flex justify-between gap-2">
+      {!isAuthenticated && (
+        <>
+          <SheetLinkButton to="/login" variant="outline" className="grow">
+            Log in
+          </SheetLinkButton>
+          <SheetLinkButton to="/signup" className="grow">
+            Sign up
+          </SheetLinkButton>
+        </>
+      )}
+      {isAuthenticated && (
+        <>
+          <Button variant="outline" className="grow">Log out</Button>
+          <SheetLinkButton to="/settings" className="grow">Settings</SheetLinkButton>
+        </>
+      )}
+    </div>
+  )
 }
 
 function MobileNavLink(props: LinkProps) {
