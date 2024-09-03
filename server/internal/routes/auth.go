@@ -47,9 +47,6 @@ func (h AuthHandler) handleLogin() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		user := auth.Session(c)
-		fmt.Println(user)
-
 		var req Request
 		if err := validation.BindAndValidate(c, &req); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -64,9 +61,23 @@ func (h AuthHandler) handleLogin() echo.HandlerFunc {
 		}
 
 		session := auth.NewSessionCookie(authDetails)
+
+		user, err := h.UserStore.User(session.Sub)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+		session.SetUser(user)
+
+		company, err := h.CompanyStore.Company(user.CompanyID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+		session.SetUserCompany(company)
+
 		if err := session.SetCookie(c, h.SessionSecret); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
+
 		return c.JSON(http.StatusOK, session)
 	}
 }

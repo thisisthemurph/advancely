@@ -7,11 +7,25 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export interface AuthContextProps {
   isAuthenticated: boolean;
+  user: SessionUser | null;
   session: Session | null;
   login: (params: LoginParams) => Promise<Session>;
   loginWithToken: (token: string) => Promise<void>;
   logout: () => Promise<void>;
   updateSession: (session: Session) => Promise<void>;
+}
+
+export interface SessionUserCompany {
+  id: string;
+  name: string;
+}
+
+export interface SessionUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  company?: SessionUserCompany;
 }
 
 export interface Session {
@@ -22,6 +36,7 @@ export interface Session {
   accessToken: string
   refreshToken: string
   expiresAt: string
+  user?: SessionUser;
 }
 
 export interface LoginParams {
@@ -99,7 +114,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       loginWithToken,
       logout,
       session,
-      updateSession
+      updateSession,
+      user: session?.user || null,
     }}>
       {children}
     </AuthContext.Provider>

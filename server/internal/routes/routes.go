@@ -30,7 +30,7 @@ func NewRouter(app *application.App) *echo.Echo {
 		AllowCredentials: true,
 	}))
 
-	userMw := mw.NewUserMiddleware(app.Supabase, app.Config.SessionSecret)
+	userMw := mw.NewUserMiddleware(app.Config.SessionSecret, app.Supabase, app.Store.UserStore)
 	e.Use(userMw.WithUserInContext)
 
 	baseGroup := e.Group("/api/v1")
