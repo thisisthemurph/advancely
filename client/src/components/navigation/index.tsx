@@ -1,7 +1,8 @@
 import { useMediaQuery } from "usehooks-ts";
 import DesktopNavigation from "./DesktopNavigation";
 import MobileNavigation from "./MobileNavigation";
-import {useAuth} from "../../hooks/useAuth.tsx";
+import { useAuth } from "../../hooks/useAuth.tsx";
+import { useNavigate } from "react-router-dom";
 
 type ShowWhen = "authenticated" | "unauthenticated" | "always";
 
@@ -44,8 +45,13 @@ const links: NavLinks = [
 ];
 
 function Navigation() {
-  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
   const isDesktop = useMediaQuery("(min-width: 640px)");
+
+  const handleLogout = async () => {
+    logout().finally(() => { navigate("/login"); });
+  }
 
   const filteredLinks = links.filter((link) => {
     switch (link.showWhen) {
@@ -64,7 +70,7 @@ function Navigation() {
   return isDesktop ? (
     <DesktopNavigation menuItems={filteredLinks} isAuthenticated={isAuthenticated} />
   ) : (
-    <MobileNavigation menuItems={filteredLinks} isAuthenticated={isAuthenticated} />
+    <MobileNavigation menuItems={filteredLinks} isAuthenticated={isAuthenticated} logout={handleLogout} />
   );
 }
 

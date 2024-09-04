@@ -11,7 +11,7 @@ export interface AuthContextProps {
   session: Session | null;
   login: (params: LoginParams) => Promise<Session>;
   loginWithToken: (token: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => Promise<boolean>;
   updateSession: (session: Session) => Promise<void>;
 }
 
@@ -99,8 +99,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const logout = async () => {
+    const endpoint = `${API_BASE_URL}/auth/logout`;
+    const resp = await post(endpoint, {})
+
     setSession(null);
     setIsAuthenticated(false);
+
+    return resp.ok;
   }
 
   const updateSession = async (newSession: Session) => {

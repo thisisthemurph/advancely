@@ -17,9 +17,10 @@ import { SheetCloseLinkButton as SheetLinkButton } from "../ui/LinkButton";
 interface MobileNavigationProps {
   menuItems: NavLinks;
   isAuthenticated: boolean;
+  logout: () => Promise<void>;
 }
 
-const MobileNavigation = memo(({ menuItems, isAuthenticated }: MobileNavigationProps) => {
+const MobileNavigation = memo(({ menuItems, isAuthenticated, logout }: MobileNavigationProps) => {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -38,7 +39,7 @@ const MobileNavigation = memo(({ menuItems, isAuthenticated }: MobileNavigationP
             <Logo />
           </MobileNavLink>
         </SheetHeader>
-        <MobileNavMenu items={menuItems} isAuthenticated={isAuthenticated} />
+        <MobileNavMenu items={menuItems} isAuthenticated={isAuthenticated} logout={logout} />
       </SheetContent>
     </Sheet>
   )
@@ -64,7 +65,7 @@ function HamburgerIcon() {
   );
 }
 
-function MobileNavMenu({ items, isAuthenticated }: { items: NavLinks, isAuthenticated: boolean }) {
+function MobileNavMenu({ items, isAuthenticated, logout }: { items: NavLinks, isAuthenticated: boolean, logout: () => Promise<void> }) {
   return (
     <div className="flex flex-col gap-8">
       <div className="gap-2 grid grid-cols-2">
@@ -72,12 +73,12 @@ function MobileNavMenu({ items, isAuthenticated }: { items: NavLinks, isAuthenti
           <CardLink key={link.label} {...link} />
         ))}
       </div>
-      <AdditionalButtons isAuthenticated={isAuthenticated} />
+      <AdditionalButtons isAuthenticated={isAuthenticated} logout={logout} />
     </div>
   );
 }
 
-const AdditionalButtons = ({isAuthenticated}: {isAuthenticated: boolean}) => {
+const AdditionalButtons = ({isAuthenticated, logout}: {isAuthenticated: boolean, logout: () => Promise<void>}) => {
   return (
     <div className="flex justify-between gap-2">
       {!isAuthenticated && (
@@ -92,7 +93,9 @@ const AdditionalButtons = ({isAuthenticated}: {isAuthenticated: boolean}) => {
       )}
       {isAuthenticated && (
         <>
-          <Button variant="outline" className="grow">Log out</Button>
+          <SheetClose asChild>
+            <Button variant="outline" className="grow" onClick={logout}>Log out</Button>
+          </SheetClose>
           <SheetLinkButton to="/settings" className="grow">Settings</SheetLinkButton>
         </>
       )}
