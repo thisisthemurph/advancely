@@ -15,7 +15,7 @@ const DatabaseMigrationPath = "file://cmd/migrate/migrations"
 func main() {
 	app := application.NewApp()
 
-	if err := migrateDatabase(app.Config.Database); err != nil {
+	if err := migrateDatabase(app); err != nil {
 		slog.Error("failed to migrate database", "error", err)
 		os.Exit(1)
 	}
@@ -26,9 +26,12 @@ func main() {
 	router.Logger.Fatal(router.Start(app.Config.Host))
 }
 
-func migrateDatabase(dbConfig application.DatabaseConfig) error {
-	if !dbConfig.AutoMigrateOn {
-		slog.Warn("Database migration disabled")
+func migrateDatabase(app *application.App) error {
+	dbConfig := app.Config.Database
+	shouldMigrateDatabase := !app.IsDevelopment() || dbConfig.AutoMigrateOn
+
+	if !shouldMigrateDatabase {
+		app.Logger.Warn("skipping database migration", "environment", app.Config.Environment, "AutoMigrateOn", dbConfig.AutoMigrateOn)
 		return nil
 	}
 
