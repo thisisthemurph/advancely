@@ -30,7 +30,7 @@ func NewRouter(app *application.App) *echo.Echo {
 
 func buildAPIHandlers(app *application.App) []RouteMaker {
 	return []RouteMaker{
-		NewAuthHandler(app.Supabase, app.Store, app.Config.SessionSecret, app.Logger),
+		NewAuthHandler(app.Supabase, app.Store, app.Config, app.Logger),
 	}
 }
 
@@ -47,6 +47,6 @@ func setUpMiddlewares(e *echo.Echo, app *application.App) {
 		AllowCredentials: true,
 	}))
 
-	userMw := mw.NewUserMiddleware(app.Config.SessionSecret, app.Supabase, app.Store.UserStore, app.Logger)
+	userMw := mw.NewUserMiddleware(app.Config, app.Supabase, app.Store.UserStore, app.Logger)
 	e.Use(userMw.WithUserInContext)
 }

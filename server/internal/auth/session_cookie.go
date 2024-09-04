@@ -64,13 +64,18 @@ func NewSessionCookie(details *supabase.AuthenticatedDetails) *SessionCookie {
 
 // SetCookie saves the SessionCookie using the provided echo context.
 // Returns an error if there are any issues encoding the session data.
-func (s *SessionCookie) SetCookie(c echo.Context, secret string) error {
+func (s *SessionCookie) SetCookie(c echo.Context, secret string, isDevelopment bool) error {
+	sameSite := http.SameSiteLaxMode
+	if isDevelopment {
+		sameSite = http.SameSiteNoneMode
+	}
+
 	store := sessions.NewCookieStore([]byte(secret))
 	store.Options = &sessions.Options{
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   !isDevelopment,
+		SameSite: sameSite,
 		MaxAge:   3600 * 24,
 	}
 

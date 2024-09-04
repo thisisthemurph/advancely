@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"advancely/internal/application"
 	"advancely/internal/auth"
 	"advancely/internal/model"
 	"advancely/internal/store"
@@ -15,22 +16,27 @@ import (
 	"net/http"
 )
 
-func NewAuthHandler(sb *supabase.Client, s *store.Store, sessionSecret string, logger *slog.Logger) AuthHandler {
+func NewAuthHandler(
+	sb *supabase.Client,
+	s *store.Store,
+	config application.AppConfig,
+	logger *slog.Logger,
+) AuthHandler {
 	return AuthHandler{
-		Supabase:      sb,
-		UserStore:     s.UserStore,
-		CompanyStore:  s.CompanyStore,
-		SessionSecret: sessionSecret,
-		Logger:        logger,
+		Supabase:     sb,
+		UserStore:    s.UserStore,
+		CompanyStore: s.CompanyStore,
+		Config:       config,
+		Logger:       logger,
 	}
 }
 
 type AuthHandler struct {
-	Supabase      *supabase.Client
-	UserStore     contract.UserStore
-	CompanyStore  contract.CompanyStore
-	SessionSecret string
-	Logger        *slog.Logger
+	Supabase     *supabase.Client
+	UserStore    contract.UserStore
+	CompanyStore contract.CompanyStore
+	Config       application.AppConfig
+	Logger       *slog.Logger
 }
 
 func (h AuthHandler) MakeRoutes(e *echo.Group) {
@@ -48,7 +54,7 @@ func (h AuthHandler) handleLogout() echo.HandlerFunc {
 		if err := h.Supabase.Auth.SignOut(ctx, user.AccessToken); err != nil {
 			h.Logger.Error("Error logging out", "error", err)
 		}
-		if err := auth.DeleteSessionCookie(c, h.SessionSecret); err != nil {
+		if err := auth.DeleteSessionCookie(c, h.Config.SessionSecret); err != nil {
 			h.Logger.Error("Error deleting session cookie", "error", err)
 		}
 		return c.NoContent(http.StatusNoContent)
@@ -95,7 +101,7 @@ func (h AuthHandler) handleLogin() echo.HandlerFunc {
 		}
 		session.SetUserCompany(company)
 
-		if err := session.SetCookie(c, h.SessionSecret); err != nil {
+		if err := session.SetCookie(c, h.Config.SessionSecret, h.Config.IsDevelopment); err != nil {
 			h.Logger.Error("failed setting session cookie", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
