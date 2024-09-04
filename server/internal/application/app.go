@@ -50,3 +50,7 @@ func (app *App) Build() {
 	}
 	app.Store = s
 }
+
+func (app *App) IsDevelopment() bool {
+	return app.Config.IsDevelopment
+}
