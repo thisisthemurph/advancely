@@ -30,19 +30,19 @@ func NewRouter(app *application.App) *echo.Echo {
 		AllowCredentials: true,
 	}))
 
-	userMw := mw.NewUserMiddleware(app.Config.SessionSecret, app.Supabase, app.Store.UserStore)
+	userMw := mw.NewUserMiddleware(app.Config.SessionSecret, app.Supabase, app.Store.UserStore, app.Logger)
 	e.Use(userMw.WithUserInContext)
 
 	baseGroup := e.Group("/api/v1")
-	for _, h := range getAPIHandlers(app) {
+	for _, h := range buildAPIHandlers(app) {
 		h.MakeRoutes(baseGroup)
 	}
 
 	return e
 }
 
-func getAPIHandlers(app *application.App) []RouteMaker {
+func buildAPIHandlers(app *application.App) []RouteMaker {
 	return []RouteMaker{
-		NewAuthHandler(app.Supabase, app.Store, app.Config.SessionSecret),
+		NewAuthHandler(app.Supabase, app.Store, app.Config.SessionSecret, app.Logger),
 	}
 }

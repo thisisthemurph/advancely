@@ -8,7 +8,6 @@ import (
 	"advancely/internal/validation"
 	"context"
 	"errors"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/nedpals/supabase-go"
@@ -16,12 +15,13 @@ import (
 	"net/http"
 )
 
-func NewAuthHandler(sb *supabase.Client, s *store.Store, sessionSecret string) AuthHandler {
+func NewAuthHandler(sb *supabase.Client, s *store.Store, sessionSecret string, logger *slog.Logger) AuthHandler {
 	return AuthHandler{
 		Supabase:      sb,
 		UserStore:     s.UserStore,
 		CompanyStore:  s.CompanyStore,
 		SessionSecret: sessionSecret,
+		Logger:        logger,
 	}
 }
 
@@ -30,6 +30,7 @@ type AuthHandler struct {
 	UserStore     contract.UserStore
 	CompanyStore  contract.CompanyStore
 	SessionSecret string
+	Logger        *slog.Logger
 }
 
 func (h AuthHandler) MakeRoutes(e *echo.Group) {
@@ -45,10 +46,10 @@ func (h AuthHandler) handleLogout() echo.HandlerFunc {
 		ctx := c.Request().Context()
 		user := auth.Session(c)
 		if err := h.Supabase.Auth.SignOut(ctx, user.AccessToken); err != nil {
-			slog.Error("Error logging out", "error", err)
+			h.Logger.Error("Error logging out", "error", err)
 		}
 		if err := auth.DeleteSessionCookie(c, h.SessionSecret); err != nil {
-			slog.Error("Error deleting session cookie", "error", err)
+			h.Logger.Error("Error deleting session cookie", "error", err)
 		}
 		return c.NoContent(http.StatusNoContent)
 	}
@@ -65,6 +66,7 @@ func (h AuthHandler) handleLogin() echo.HandlerFunc {
 
 		var req Request
 		if err := validation.BindAndValidate(c, &req); err != nil {
+			h.Logger.Error("failed binding/validating login request", "error", err)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
@@ -73,6 +75,7 @@ func (h AuthHandler) handleLogin() echo.HandlerFunc {
 			Password: req.Password,
 		})
 		if err != nil {
+			h.Logger.Error("failed signing in with supabase", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 
@@ -80,17 +83,20 @@ func (h AuthHandler) handleLogin() echo.HandlerFunc {
 
 		user, err := h.UserStore.User(session.Sub)
 		if err != nil {
+			h.Logger.Error("failed getting user from store", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 		session.SetUser(user)
 
 		company, err := h.CompanyStore.Company(user.CompanyID)
 		if err != nil {
+			h.Logger.Error("failed getting company from store", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 		session.SetUserCompany(company)
 
 		if err := session.SetCookie(c, h.SessionSecret); err != nil {
+			h.Logger.Error("failed setting session cookie", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 
@@ -169,16 +175,18 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 
 		var form formParams
 		if err := validation.BindAndValidate(c, &form); err != nil {
+			h.Logger.Error("failed to bind/validate signup request", "error", err)
 			return err
 		}
 
 		user, err := getOrSignupSupabaseUser(ctx, form)
 		if err != nil {
-			we := fmt.Errorf("error signing up user: %w", err)
-			return echo.NewHTTPError(500, we.Error())
+			h.Logger.Error("failed to sign up in supabase", "error", err)
+			return echo.NewHTTPError(500)
 		}
 		userID, err := uuid.Parse(user.ID)
 		if err != nil {
+			h.Logger.Error("failed to parse user ID", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Invalid user ID")
 		}
 
@@ -189,6 +197,7 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 			CreatorID: userID,
 		})
 		if err != nil {
+			h.Logger.Error("failed to create company", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create company")
 		}
 
@@ -203,6 +212,7 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 			IsAdmin:   true,
 		})
 		if err != nil {
+			h.Logger.Error("failed to create user profile", "error", err)
 			return echo.NewHTTPError(500, "Failed to create profile")
 		}
 
@@ -226,18 +236,19 @@ func (h AuthHandler) handleVerifyEmailVerificationComplete() echo.HandlerFunc {
 
 		var req Request
 		if err := validation.BindAndValidate(c, &req); err != nil {
+			h.Logger.Error("failed to bind/validate verification request", "error", err)
 			return err
 		}
 
 		user, err := h.Supabase.Auth.User(ctx, req.Token)
 		if err != nil || user == nil {
+			h.Logger.Error("failed to verify user", "error", err)
 			return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
 		}
 
 		if user.ConfirmedAt.IsZero() {
 			return c.NoContent(http.StatusUnauthorized)
 		}
-
 		return c.NoContent(http.StatusNoContent)
 	}
 }

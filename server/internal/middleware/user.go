@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/nedpals/supabase-go"
+	"log/slog"
 )
 
 var (
@@ -19,33 +20,44 @@ type UserMiddleware struct {
 	*supabase.Client
 	UserStore     contract.UserStore
 	SessionSecret string
+	Logger        *slog.Logger
 }
 
-func NewUserMiddleware(sessionSecret string, client *supabase.Client, userStore contract.UserStore) *UserMiddleware {
+func NewUserMiddleware(
+	sessionSecret string,
+	client *supabase.Client,
+	userStore contract.UserStore,
+	logger *slog.Logger,
+) *UserMiddleware {
 	return &UserMiddleware{
 		Client:        client,
 		SessionSecret: sessionSecret,
 		UserStore:     userStore,
+		Logger:        logger,
 	}
 }
 
 func (m *UserMiddleware) WithUserInContext(next echo.HandlerFunc) echo.HandlerFunc {
+	logger := m.Logger.With("mw", "WithUserInContext")
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 
 		session, err := auth.GetSessionFromCookie(c, m.SessionSecret)
 		if err != nil {
+			logger.Debug("failed to get session from cookie", "error", err)
 			return next(c)
 		}
 
 		if session.Expired() {
 			refreshedAuthDetails, err := m.refreshSupabaseUser(ctx, session)
 			if err != nil {
+				logger.Debug("failed to refresh supabase user", "error", err)
 				return next(c)
 			}
 
 			session = auth.NewSessionCookie(refreshedAuthDetails)
 			if err := session.SetCookie(c, m.SessionSecret); err != nil {
+				logger.Error("failed to set cookie", "error", err)
 				return next(c)
 			}
 		}

@@ -1,6 +1,9 @@
 package application
 
-import "strconv"
+import (
+	"log/slog"
+	"strconv"
+)
 
 type DatabaseConfig struct {
 	Name          string
@@ -20,6 +23,9 @@ type ResendConfig struct {
 }
 
 type AppConfig struct {
+	Environment   string
+	IsDevelopment bool
+	LogLevel      slog.Level
 	Host          string
 	ClientBaseURL string
 	SessionSecret string
@@ -33,7 +39,16 @@ func NewAppConfig(get func(string) string) AppConfig {
 	var autoMigrateOn bool
 	autoMigrateOn, _ = strconv.ParseBool(get("AUTO_MIGRATE_ON"))
 
+	environment := get("ENVIRONMENT")
+	logLevel := slog.LevelInfo
+	if environment == "development" {
+		logLevel = slog.LevelDebug
+	}
+
 	return AppConfig{
+		Environment:   environment,
+		IsDevelopment: environment == "development",
+		LogLevel:      logLevel,
 		Host:          get("LISTEN_ADDRESS"),
 		ClientBaseURL: get("CLIENT_BASE_URL"),
 		SessionSecret: get("SESSION_SECRET"),
