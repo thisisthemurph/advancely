@@ -132,3 +132,14 @@ func GetSessionFromCookie(c echo.Context, secret string) (*SessionCookie, error)
 	}
 	return sessionCookie, nil
 }
+
+func DeleteSessionCookie(c echo.Context, secret string) error {
+	store := sessions.NewCookieStore([]byte(secret))
+	storeSession, err := store.Get(c.Request(), SessionCookieSessionValueKey)
+	if err != nil {
+		return ErrorCookieNotFound
+	}
+	storeSession.Values[SessionCookieSessionValueKey] = nil
+	storeSession.Options.MaxAge = -1
+	return storeSession.Save(c.Request(), c.Response())
+}

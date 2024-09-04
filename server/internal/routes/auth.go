@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/nedpals/supabase-go"
+	"log/slog"
 	"net/http"
 )
 
@@ -35,7 +36,22 @@ func (h AuthHandler) MakeRoutes(e *echo.Group) {
 	group := e.Group("/auth")
 	group.POST("/login", h.handleLogin())
 	group.POST("/signup", h.handleSignup())
+	group.POST("/logout", h.handleLogout())
 	group.POST("/confirm-email", h.handleVerifyEmailVerificationComplete())
+}
+
+func (h AuthHandler) handleLogout() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		user := auth.Session(c)
+		if err := h.Supabase.Auth.SignOut(ctx, user.AccessToken); err != nil {
+			slog.Error("Error logging out", "error", err)
+		}
+		if err := auth.DeleteSessionCookie(c, h.SessionSecret); err != nil {
+			slog.Error("Error deleting session cookie", "error", err)
+		}
+		return c.NoContent(http.StatusNoContent)
+	}
 }
 
 func (h AuthHandler) handleLogin() echo.HandlerFunc {
