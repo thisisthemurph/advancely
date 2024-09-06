@@ -17,6 +17,7 @@ type RouteMaker interface {
 
 func NewRouter(app *application.App) *echo.Echo {
 	e := echo.New()
+
 	e.Validator = validation.NewCustomValidator()
 	setUpMiddlewares(e, app)
 
@@ -35,11 +36,26 @@ func buildAPIHandlers(app *application.App) []RouteMaker {
 }
 
 func setUpMiddlewares(e *echo.Echo, app *application.App) {
+	if !app.IsDevelopment() {
+		// In production, the client is served from the api.
+		// In development, the client must be served separately.
+		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+			Skipper:    nil,
+			Root:       "../client/dist",
+			Index:      "index.html",
+			HTML5:      true,
+			Browse:     false,
+			IgnoreBase: false,
+			Filesystem: nil,
+		}))
+	}
+
 	if app.IsDevelopment() {
+		// Show additional HTTP request logging in development only.
 		e.Use(middleware.Logger())
 	}
-	e.Use(middleware.Recover())
 
+	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{app.Config.ClientBaseURL},
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
