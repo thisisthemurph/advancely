@@ -14,8 +14,8 @@ const renderWithClient = (ui: ReactNode) => {
   );
 };
 
-describe("LoginForm component", () => {
-  it("sets the placeholder to 'your.name@company.com' when the company name is empty", () => {
+describe("SignupForm component", () => {
+  it("updates the email placeholder when the company name is changed", () => {
     const dummyFn = () => {};
     renderWithClient(<SignupForm onSignupComplete={dummyFn} />);
 
