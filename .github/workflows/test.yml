@@ -25,6 +25,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - run: cd client
+
       - name: Install dependencies
         run: npm install
 
