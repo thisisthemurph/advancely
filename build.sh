@@ -8,5 +8,3 @@ npm run build
 cd ../server
 
 go build -tags netgo -ldflags '-s -w' -o ./bin/app ./cmd/api/.
-
-./bin/app
