@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm, UseFormReturn } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -75,15 +75,14 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
     await signupMutation(values).catch(() => {});
   }
 
-  function onCompanyNameChange(form: UseFormReturn<FormSchema>) {
-    const companyName = form.getValues("name");
+  function onCompanyNameChange(companyName: string) {
     if (!companyName) {
       setEmailPlaceholder("your.name@company.com");
       return;
     }
 
     const email = `your.name@${companyName}.com`;
-    setEmailPlaceholder(email.toLowerCase().replace(" ", ""));
+    setEmailPlaceholder(email.toLowerCase().split(" ").join(""));
   }
 
   return (
@@ -104,10 +103,11 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel infoText={EmailInfo}>Company name</FormLabel>
-                <FormControl onChange={() => onCompanyNameChange(form)}>
+                <FormControl onChange={() => onCompanyNameChange(form.getValues("name"))}>
                   <Input
                     autoFocus={true}
                     placeholder="Your Company LTD"
+                    data-testid="company-name"
                     {...field}
                   />
                 </FormControl>
@@ -162,6 +162,7 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
                   <Input
                     type="email"
                     placeholder={emailPlaceholder}
+                    data-testid="user-email"
                     {...field}
                   />
                 </FormControl>

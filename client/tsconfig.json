@@ -1,5 +1,10 @@
 {
+  "compilerOptions": {
+    /* Needed for vitest */
+    "types": ["vitest/globals"]
+  },
   "files": [],
+  "include": ["./src", ".src/test/setup.ts"],
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
