@@ -5,16 +5,9 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 
 export default defineConfig(({ mode }) => {
-  const envDir = mode == "production" ? "/etc/secrets" : process.cwd();
-
-  console.log({
-    mode,
-    cwd: process.cwd(),
-  });
-
   return {
     plugins: [react()],
-    envDir,
+    envDir: mode == "production" ? "/etc/secrets" : process.cwd(),
     test: {
       globals: true,
       environment: "jsdom",
