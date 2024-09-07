@@ -59,8 +59,8 @@ func (app *App) IsDevelopment() bool {
 func loadPossibleEnv(paths ...string) error {
 	var err error
 	for _, path := range paths {
-		if err = godotenv.Load(path); err != nil {
-			continue
+		if err = godotenv.Load(path); err == nil {
+			return nil
 		}
 	}
 	return err
