@@ -1,7 +1,6 @@
 package application
 
 import (
-	"fmt"
 	"log/slog"
 	"strconv"
 )
@@ -41,7 +40,7 @@ func NewAppConfig(get func(string) string) AppConfig {
 	envValue := get("ENVIRONMENT")
 	environment := NewEnvironment(envValue)
 	if environment == EnvironmentUnknown {
-		panic(fmt.Errorf("unkown environment: %s", envValue))
+		environment = EnvironmentProduction
 	}
 
 	logLevel := slog.LevelInfo
