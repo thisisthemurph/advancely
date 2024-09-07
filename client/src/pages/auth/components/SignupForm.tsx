@@ -51,7 +51,7 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
     "your.name@company.com"
   );
 
-  const form = useForm<FormSchema>({
+  const { control, getValues, handleSubmit, ...form } = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -78,13 +78,7 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
   }
 
   function onCompanyNameChange(companyName: string) {
-    if (!companyName) {
-      setEmailPlaceholder("your.name@company.com");
-      return;
-    }
-
-    const email = `your.name@${companyName}.com`;
-    setEmailPlaceholder(email.toLowerCase().split(" ").join(""));
+    setEmailPlaceholder(companyName ? `your.name@${companyName.toLowerCase().replace(/\s+/g, '')}.com` : "your.name@company.com");
   }
 
   return (
@@ -97,15 +91,15 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
           <p>{error.message}</p>
         </section>
       )}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Form { ...{ control, getValues, handleSubmit, ...form } }>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <FormField
-            control={form.control}
+            control={control}
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel infoText={EmailInfo}>Company name</FormLabel>
-                <FormControl onChange={() => onCompanyNameChange(form.getValues("name"))}>
+                <FormLabel>Company name</FormLabel>
+                <FormControl onChange={() => onCompanyNameChange(getValues("name"))}>
                   <Input
                     autoFocus={true}
                     placeholder="Your Company LTD"
@@ -121,11 +115,11 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
             )}
           />
           <FormField
-            control={form.control}
+            control={control}
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel infoText={FirstNameInfo}>First name</FormLabel>
+                <FormLabel>First name</FormLabel>
                 <FormControl>
                   <Input type="text" placeholder="Your first name" {...field} />
                 </FormControl>
@@ -137,11 +131,11 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
             )}
           />
           <FormField
-            control={form.control}
+            control={control}
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel infoText={LastNameInfo}>Last name</FormLabel>
+                <FormLabel>Last name</FormLabel>
                 <FormControl>
                   <Input type="text" placeholder="Your last name" {...field} />
                 </FormControl>
@@ -153,13 +147,11 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
             )}
           />
           <FormField
-            control={form.control}
+            control={control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel infoText={EmailInfo}>
-                  <span>Email</span>
-                </FormLabel>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
@@ -176,7 +168,7 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
             )}
           />
           <FormField
-            control={form.control}
+            control={control}
             name="password"
             render={({ field }) => (
               <FormItem>
@@ -192,11 +184,7 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
               </FormItem>
             )}
           />
-          <Button
-            type="submit"
-            disabled={isSignupPending}
-            loading={isSignupPending}
-          >
+          <Button type="submit" disabled={isSignupPending} loading={isSignupPending}>
             Sign up
           </Button>
         </form>
