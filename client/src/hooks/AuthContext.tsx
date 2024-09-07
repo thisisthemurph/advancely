@@ -82,6 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (data: LoginParams): Promise<Session> => {
     const endpoint = `${API_BASE_URL}/auth/login`;
+    console.log({ endpoint, API_BASE_URL, fromMeta: import.meta.env.VITE_API_BASE_URL });
     const resp = await post(endpoint, data);
     if (!resp.ok) {
       return Promise.reject(await handleErrorResponse(resp));
