@@ -27,7 +27,6 @@ const MobileNavigation = memo(({ menuItems, isAuthenticated, logout }: MobileNav
         <Button
           variant="ghost"
           size="icon"
-          className="top-3 right-3 fixed"
           aria-label="open menu"
         >
           <HamburgerIcon />
