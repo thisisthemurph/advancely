@@ -13,6 +13,8 @@ export interface AuthContextProps {
   loginWithToken: (token: string) => Promise<void>;
   logout: () => Promise<boolean>;
   updateSession: (session: Session) => Promise<void>;
+  signup: (data: SignupRequest) => Promise<SignupResponse>;
+  emailConfirmed: (data: { token: string }) => Promise<boolean>;
 }
 
 export interface SessionUserCompany {
@@ -42,6 +44,22 @@ export interface Session {
 export interface LoginParams {
   email: string;
   password: string;
+}
+
+export interface SignupRequest {
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}
+
+export interface SignupResponse {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  companyName: string;
 }
 
 export const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -82,7 +100,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (data: LoginParams): Promise<Session> => {
     const endpoint = `${API_BASE_URL}/auth/login`;
-    console.log({ endpoint, API_BASE_URL, fromMeta: import.meta.env.VITE_API_BASE_URL });
     const resp = await post(endpoint, data);
     if (!resp.ok) {
       return Promise.reject(await handleErrorResponse(resp));
@@ -92,6 +109,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(newSession);
     setIsAuthenticated(true);
     return newSession;
+  }
+
+  const signup = async (data: SignupRequest): Promise<SignupResponse> => {
+    const endpoint = `${API_BASE_URL}/auth/signup`;
+    const genericError = "There has been an unknown error signing you up, please try again later."
+    const resp = await post(endpoint, data);
+
+    if (!resp.ok) {
+      return Promise.reject(handleErrorResponse(resp, genericError));
+    }
+    return resp.json();
   }
 
   const loginWithToken = async (token: string) => {
@@ -109,17 +137,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return resp.ok;
   }
 
+  const emailConfirmed = async (data: { token: string }): Promise<boolean> => {
+    const endpoint = `${import.meta.env.VITE_API_BASE_URL}/auth/confirm-email`;
+    const resp = await post(endpoint, data);
+    return resp.ok;
+  }
+
   const updateSession = async (newSession: Session) => {
     setSession({ ...newSession });
   }
 
   return (
     <AuthContext.Provider value={{
+      emailConfirmed,
       isAuthenticated,
       login,
       loginWithToken,
       logout,
       session,
+      signup,
       updateSession,
       user: session?.user || null,
     }}>

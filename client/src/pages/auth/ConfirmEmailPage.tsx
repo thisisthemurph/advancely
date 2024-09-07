@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { checkEmailConfirmed } from "../../api/auth";
 import LoadingDot from "../../components/ui/LoadingDot.tsx";
+import { useAuth } from "../../hooks/useAuth.tsx";
 
 interface PageError {
   code: string;
@@ -17,6 +17,7 @@ interface TokenData {
 }
 
 function ConfirmEmailPage() {
+  const auth = useAuth();
   const navigate = useNavigate();
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [error, setError] = useState<PageError>({
@@ -78,7 +79,7 @@ function ConfirmEmailPage() {
       return;
     }
 
-    checkEmailConfirmed({ token: accessToken }).then(() => {
+    auth.emailConfirmed({ token: accessToken }).then(() => {
       navigate("/login");
     }).catch(() => {
       setError({

@@ -25,7 +25,6 @@ export const handleErrorResponse = async (
 function isDefaultError(status: number, error: ErrorResponse): boolean {
   console.log({ status, error: error.message });
 
-  // Define default error messages based on status codes
   const defaultErrors: { [key: number]: string } = {
     400: "Bad Request",
     401: "Unauthorized",
@@ -37,10 +36,8 @@ function isDefaultError(status: number, error: ErrorResponse): boolean {
     504: "Gateway Timeout",
   };
 
-  // Check if the status code exists in the defaultErrors object
   if (defaultErrors[status] && error.message === defaultErrors[status]) {
     return true;
   }
-
   return false;
 }

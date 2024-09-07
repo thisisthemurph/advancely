@@ -15,8 +15,9 @@ import {
   FormLabel,
   FormMessage,
 } from "../../../components/ui/form";
-import { signup, SignupRequest, SignupResponse } from "../../../api/auth";
 import { ErrorResponse } from "../../../api/api";
+import { useAuth } from "../../../hooks/useAuth.tsx";
+import { SignupRequest, SignupResponse } from "../../../hooks/AuthContext.tsx";
 
 const CompanyNameInfo =
   "Set the name of your company, this is the name all of your employees will see themselves under when they sign in.";
@@ -44,6 +45,7 @@ interface SignupFormParams {
 }
 
 function SignupForm({ onSignupComplete }: SignupFormParams) {
+  const { signup } = useAuth();
   const [error, setError] = useState<null | ErrorResponse>(null);
   const [emailPlaceholder, setEmailPlaceholder] = useState(
     "your.name@company.com"
