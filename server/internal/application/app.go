@@ -20,6 +20,11 @@ type App struct {
 }
 
 func NewApp() *App {
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	slog.Warn("cwd", "is", cwd)
 	if err := godotenv.Load(); err != nil {
 		if err := godotenv.Load("./server/.env"); err != nil {
 			log.Fatal("Error loading .env file")
