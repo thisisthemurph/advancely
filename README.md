@@ -76,25 +76,25 @@ RESEND_KEY=<create a resend key at resend.com>
 Run the server; this will run commands present in the `server/Makefile`:
 
 ```console
-server$ make api
+make api
 ```
 
 Install node dependencies:
 
 ```console
-client$ npm install
+npm install
 ```
 
 If you want to watch for tailwind changes, you should run:
 
 ```console
-client$ npm run tailwind
+npm run tailwind
 ```
 
 Run the front-end react app:
 
 ```console
-client$ npm run dev
+npm run dev
 ```
 
 ## Database migrations
