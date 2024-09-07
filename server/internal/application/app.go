@@ -56,6 +56,8 @@ func (app *App) IsDevelopment() bool {
 	return app.Config.IsDevelopment
 }
 
+// loadPossibleEnv takes any number of env paths and returns on the first success.
+// Returns an error if none of the possible paths could be located.
 func loadPossibleEnv(paths ...string) error {
 	var err error
 	for _, path := range paths {
