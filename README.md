@@ -105,14 +105,14 @@ In development, this will only happen if the `AUTO_MIGRATE_ON` environment varia
 
 To run a migration manually you can run the following from the `server` directory:
 
-```sh
-make migrate
+```console
+server$ make migrate
 ```
 
 To run a down migration, you can run the following:
 
-```sh
-make migrate-down
+```console
+server$ make migrate-down
 ```
 
 Note that running the down migration will clear all data from the database and drop all tables.
