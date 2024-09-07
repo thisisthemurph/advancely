@@ -1,15 +1,20 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { ReactNode } from "react";
 import { describe, it, expect } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import SignupForm from "./SignupForm";
-import {ReactNode} from "react";
+import { AuthProvider } from "../../../hooks/AuthContext.tsx";
 
-const queryClient = new QueryClient()
 
-const renderWithClient = (ui: ReactNode) => {
+
+const renderWithProviders = (ui: ReactNode) => {
+  const queryClient = new QueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
-      {ui}
+      <AuthProvider>
+        {ui}
+      </AuthProvider>
     </QueryClientProvider>
   );
 };
@@ -17,7 +22,7 @@ const renderWithClient = (ui: ReactNode) => {
 describe("SignupForm component", () => {
   it("updates the email placeholder when the company name is changed", () => {
     const dummyFn = () => {};
-    renderWithClient(<SignupForm onSignupComplete={dummyFn} />);
+    renderWithProviders(<SignupForm onSignupComplete={dummyFn} />);
 
     const companyInput = screen.getByTestId("company-name") as HTMLInputElement;
     const emailInput = screen.getByTestId("user-email") as HTMLInputElement;
