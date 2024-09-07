@@ -4,23 +4,46 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"log/slog"
 )
 
+var DefaultMigrationPath = "file://cmd/migrate/migrations"
 var ErrUnknownDirection = errors.New("unknown direction expected up or down")
 
-type Migrator interface {
-	Migrate(direction string) error
+type MigrationDirection string
+
+const (
+	MigrationDirectionUp      MigrationDirection = "up"
+	MigrationDirectionDown    MigrationDirection = "down"
+	MigrationDirectionUnknown MigrationDirection = "unknown"
+)
+
+func NewMigrationDirection(direction string) MigrationDirection {
+	switch direction {
+	case "up":
+		return MigrationDirectionUp
+	case "down":
+		return MigrationDirectionDown
+	default:
+		return MigrationDirectionUnknown
+	}
 }
 
-func NewPostgresMigrator(db *sql.DB, dbName, migrationPath string) Migrator {
+type Migrator interface {
+	Migrate(direction MigrationDirection) error
+}
+
+func NewPostgresMigrator(db *sql.DB, dbName, migrationPath string) *PostgresMigrator {
 	return &PostgresMigrator{
 		DB:            db,
 		DBName:        dbName,
 		MigrationPath: migrationPath,
+		Logger:        slog.New(slog.NewTextHandler(os.Stdout, nil)),
 	}
 }
 
@@ -28,9 +51,15 @@ type PostgresMigrator struct {
 	DB            *sql.DB
 	DBName        string
 	MigrationPath string
+	Logger        *slog.Logger
 }
 
-func (m *PostgresMigrator) Migrate(direction string) error {
+func (m *PostgresMigrator) WithLogger(logger *slog.Logger) *PostgresMigrator {
+	m.Logger = logger
+	return m
+}
+
+func (m *PostgresMigrator) Migrate(direction MigrationDirection) error {
 	driver, err := postgres.WithInstance(m.DB, &postgres.Config{})
 	if err != nil {
 		return fmt.Errorf("could not create database driver: %w", err)
@@ -41,21 +70,21 @@ func (m *PostgresMigrator) Migrate(direction string) error {
 		return fmt.Errorf("could not create migration instance: %w", err)
 	}
 
-	slog.Info("starting database migration", "direction", direction)
+	m.Logger.Info("starting database migration", "direction", direction)
 
 	switch direction {
-	case "up":
+	case MigrationDirectionUp:
 		if err := mig.Up(); err != nil {
 			if errors.Is(err, migrate.ErrNoChange) {
-				fmt.Println("nothing to migrate")
+				m.Logger.Info("nothing to migrate")
 				return nil
 			}
 			return fmt.Errorf("could not run migration: %w", err)
 		}
-	case "down":
+	case MigrationDirectionDown:
 		if err := mig.Down(); err != nil {
 			if errors.Is(err, migrate.ErrNoChange) {
-				fmt.Println("nothing to migrate")
+				m.Logger.Info("nothing to migrate")
 				return nil
 			}
 			return fmt.Errorf("could not run migration: %w", err)
@@ -64,6 +93,6 @@ func (m *PostgresMigrator) Migrate(direction string) error {
 		return fmt.Errorf("%w got %s", ErrUnknownDirection, direction)
 	}
 
-	slog.Info("database migration complete")
+	m.Logger.Info("database migration complete")
 	return nil
 }

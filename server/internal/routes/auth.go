@@ -101,7 +101,7 @@ func (h AuthHandler) handleLogin() echo.HandlerFunc {
 		}
 		session.SetUserCompany(company)
 
-		if err := session.SetCookie(c, h.Config.SessionSecret, h.Config.IsDevelopment); err != nil {
+		if err := session.SetCookie(c, h.Config.SessionSecret, h.Config.Environment); err != nil {
 			h.Logger.Error("failed setting session cookie", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}

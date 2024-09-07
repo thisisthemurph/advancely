@@ -57,7 +57,7 @@ func (m *UserMiddleware) WithUserInContext(next echo.HandlerFunc) echo.HandlerFu
 			}
 
 			session = auth.NewSessionCookie(refreshedAuthDetails)
-			if err := session.SetCookie(c, m.Config.SessionSecret, m.Config.IsDevelopment); err != nil {
+			if err := session.SetCookie(c, m.Config.SessionSecret, m.Config.Environment); err != nil {
 				logger.Error("failed to set cookie", "error", err)
 				return next(c)
 			}

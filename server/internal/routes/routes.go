@@ -36,9 +36,9 @@ func buildAPIHandlers(app *application.App) []RouteMaker {
 }
 
 func setUpMiddlewares(e *echo.Echo, app *application.App) {
-	if !app.IsDevelopment() {
-		// In production, the client is served from the api.
-		// In development, the client must be served separately.
+	// In production, the client is served from the api.
+	// In development, the client must be served separately.
+	if app.Config.Environment.IsProduction() {
 		e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
 			Skipper:    nil,
 			Root:       "../client/dist",
@@ -50,8 +50,8 @@ func setUpMiddlewares(e *echo.Echo, app *application.App) {
 		}))
 	}
 
-	if app.IsDevelopment() {
-		// Show additional HTTP request logging in development only.
+	// Show additional HTTP request logging in development only.
+	if app.Config.Environment.IsDevelopment() {
 		e.Use(middleware.Logger())
 	}
 

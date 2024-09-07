@@ -1,6 +1,7 @@
 package application
 
 import (
+	"fmt"
 	"log/slog"
 	"strconv"
 )
@@ -23,8 +24,7 @@ type ResendConfig struct {
 }
 
 type AppConfig struct {
-	Environment   string
-	IsDevelopment bool
+	Environment   Environment
 	LogLevel      slog.Level
 	Host          string
 	ClientBaseURL string
@@ -36,18 +36,21 @@ type AppConfig struct {
 }
 
 func NewAppConfig(get func(string) string) AppConfig {
-	var autoMigrateOn bool
-	autoMigrateOn, _ = strconv.ParseBool(get("AUTO_MIGRATE_ON"))
+	autoMigrateOn, _ := strconv.ParseBool(get("AUTO_MIGRATE_ON"))
 
-	environment := get("ENVIRONMENT")
+	envValue := get("ENVIRONMENT")
+	environment := NewEnvironment(envValue)
+	if environment == EnvironmentUnknown {
+		panic(fmt.Errorf("unkown environment: %s", envValue))
+	}
+
 	logLevel := slog.LevelInfo
-	if environment == "development" {
+	if environment.IsDevelopment() {
 		logLevel = slog.LevelDebug
 	}
 
 	return AppConfig{
 		Environment:   environment,
-		IsDevelopment: environment == "development",
 		LogLevel:      logLevel,
 		Host:          get("LISTEN_ADDRESS"),
 		ClientBaseURL: get("CLIENT_BASE_URL"),

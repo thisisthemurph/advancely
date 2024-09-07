@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"advancely/internal/application"
 	"advancely/internal/model"
 	"encoding/gob"
 	"errors"
@@ -63,26 +64,20 @@ func NewSessionCookie(details *supabase.AuthenticatedDetails) *SessionCookie {
 }
 
 // SetCookie saves the SessionCookie using the provided echo context.
-// Returns an error if there are any issues encoding the session data.
-func (s *SessionCookie) SetCookie(c echo.Context, secret string, isDevelopment bool) error {
-	store := sessions.NewCookieStore([]byte(secret))
+// Returns an error if there are issues fetching or saving the cookie store.
+func (s *SessionCookie) SetCookie(c echo.Context, secret string, environment application.Environment) error {
+	sameSiteMode := http.SameSiteLaxMode
+	if environment.IsProduction() {
+		sameSiteMode = http.SameSiteStrictMode
+	}
 
-	if isDevelopment {
-		store.Options = &sessions.Options{
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   false,
-			SameSite: http.SameSiteLaxMode,
-			MaxAge:   3600 * 24,
-		}
-	} else {
-		store.Options = &sessions.Options{
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteStrictMode,
-			MaxAge:   3600 * 24,
-		}
+	store := sessions.NewCookieStore([]byte(secret))
+	store.Options = &sessions.Options{
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   environment.IsProduction(),
+		SameSite: sameSiteMode,
+		MaxAge:   3600 * 24,
 	}
 
 	storeSession, err := store.Get(c.Request(), SessionCookieStoreName)

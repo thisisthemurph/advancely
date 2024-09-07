@@ -11,15 +11,13 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-const migrationPath = "file://cmd/migrate/migrations"
-
 func init() {
 	if err := godotenv.Load(); err != nil {
 		panic(err)
 	}
 }
 
-func run(direction string, config application.AppConfig) error {
+func run(direction migrator.MigrationDirection, config application.AppConfig) error {
 	db, err := sql.Open("postgres", config.Database.URI)
 	if err != nil {
 		return fmt.Errorf("could not connect to database: %w", err)
@@ -29,7 +27,7 @@ func run(direction string, config application.AppConfig) error {
 	}
 	defer db.Close()
 
-	m := migrator.NewPostgresMigrator(db, config.Database.Name, migrationPath)
+	m := migrator.NewPostgresMigrator(db, config.Database.Name, migrator.DefaultMigrationPath)
 	return m.Migrate(direction)
 }
 
@@ -39,7 +37,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	direction := os.Args[len(os.Args)-1]
+	directionArg := os.Args[len(os.Args)-1]
+	direction := migrator.NewMigrationDirection(directionArg)
 	config := application.NewAppConfig(os.Getenv)
 
 	if err := run(direction, config); err != nil {

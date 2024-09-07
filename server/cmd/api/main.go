@@ -10,8 +10,6 @@ import (
 	"os"
 )
 
-const DatabaseMigrationPath = "file://cmd/migrate/migrations"
-
 func main() {
 	app := application.NewApp()
 
@@ -28,11 +26,18 @@ func main() {
 
 func migrateDatabase(app *application.App) error {
 	dbConfig := app.Config.Database
-	shouldMigrateDatabase := !app.IsDevelopment() || dbConfig.AutoMigrateOn
+	environment := app.Config.Environment
+	shouldMigrateDatabase := environment.IsProduction() || dbConfig.AutoMigrateOn
 
 	if !shouldMigrateDatabase {
-		app.Logger.Warn("skipping database migration", "environment", app.Config.Environment, "AutoMigrateOn", dbConfig.AutoMigrateOn)
+		app.Logger.Warn("skipping database migration", "environment", environment, "AutoMigrateOn", dbConfig.AutoMigrateOn)
 		return nil
+	}
+
+	if environment.IsProduction() {
+		app.Logger.Info("migrating database as in production")
+	} else if environment.IsDevelopment() && dbConfig.AutoMigrateOn {
+		app.Logger.Info("migrating database in development as AutoMigrateOn is set to true")
 	}
 
 	db, err := sql.Open("postgres", dbConfig.URI)
@@ -44,6 +49,6 @@ func migrateDatabase(app *application.App) error {
 	}
 	defer db.Close()
 
-	m := migrator.NewPostgresMigrator(db, dbConfig.Name, DatabaseMigrationPath)
-	return m.Migrate("up")
+	m := migrator.NewPostgresMigrator(db, dbConfig.Name, migrator.DefaultMigrationPath).WithLogger(app.Logger)
+	return m.Migrate(migrator.MigrationDirectionUp)
 }

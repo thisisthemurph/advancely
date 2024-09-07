@@ -17,8 +17,8 @@ type AuthenticatedSession struct {
 	AuthenticatedSessionUser
 }
 
-// Session returns the current user session stored in the context.
-// If no session is present, a default session is returned.
+// Session returns the current user session stored in the echo.Context.
+// If no session is present or the session could not be parsed, a default session is returned.
 func Session(c echo.Context) AuthenticatedSession {
 	session, ok := c.Get(string(UserSessionContextKey)).(SessionCookie)
 	if !ok {
