@@ -2,6 +2,7 @@ package application
 
 import (
 	"advancely/internal/store"
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
@@ -20,15 +21,8 @@ type App struct {
 }
 
 func NewApp() *App {
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	slog.Warn("cwd", "is", cwd)
-	if err := godotenv.Load(); err != nil {
-		if err := godotenv.Load("../.env"); err != nil {
-			log.Fatal("Error loading .env file")
-		}
+	if err := loadPossibleEnv(".env", "../.env", "/etc/secrets/.env"); err != nil {
+		log.Fatal(fmt.Errorf("error loading .env file: %w", err))
 	}
 
 	config := NewAppConfig(os.Getenv)
@@ -60,4 +54,14 @@ func (app *App) Build() {
 
 func (app *App) IsDevelopment() bool {
 	return app.Config.IsDevelopment
+}
+
+func loadPossibleEnv(paths ...string) error {
+	var err error
+	for _, path := range paths {
+		if err = godotenv.Load(path); err != nil {
+			continue
+		}
+	}
+	return err
 }
