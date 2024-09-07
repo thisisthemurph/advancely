@@ -76,7 +76,13 @@ func (s *SessionCookie) SetCookie(c echo.Context, secret string, isDevelopment b
 			MaxAge:   3600 * 24,
 		}
 	} else {
-		store.Options.HttpOnly = true
+		store.Options = &sessions.Options{
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+			MaxAge:   3600 * 24,
+		}
 	}
 
 	storeSession, err := store.Get(c.Request(), SessionCookieStoreName)

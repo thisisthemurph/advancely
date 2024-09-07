@@ -26,7 +26,7 @@ func NewApp() *App {
 	}
 	slog.Warn("cwd", "is", cwd)
 	if err := godotenv.Load(); err != nil {
-		if err := godotenv.Load("./server/.env"); err != nil {
+		if err := godotenv.Load("../.env"); err != nil {
 			log.Fatal("Error loading .env file")
 		}
 	}
