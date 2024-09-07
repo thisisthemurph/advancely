@@ -8,11 +8,11 @@ import {
   SheetHeader,
   SheetTrigger,
 } from "../ui/sheet";
-import Logo from "../ui/Logo";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { NavLinkProps, NavLinks } from ".";
 import { SheetCloseLinkButton as SheetLinkButton } from "../ui/LinkButton";
+import Logo from "../Logo.tsx";
 
 interface MobileNavigationProps {
   menuItems: NavLinks;
@@ -35,8 +35,9 @@ const MobileNavigation = memo(({ menuItems, isAuthenticated, logout }: MobileNav
       </SheetTrigger>
       <SheetContent side="top" hideClose>
         <SheetHeader>
-          <MobileNavLink to="/" className="mb-8">
-            <Logo />
+          <MobileNavLink to="/" className="group flex justify-center items-center gap-2 mb-8">
+            <Logo size="md" className="group-hover:grayscale group-hover:translate-x-[5.5rem] transition-all"/>
+            <span className="text-slate-600 italic font-semibold group-hover:-translate-x-12 transition-all">Advancely</span>
           </MobileNavLink>
         </SheetHeader>
         <MobileNavMenu items={menuItems} isAuthenticated={isAuthenticated} logout={logout} />
