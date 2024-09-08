@@ -5,7 +5,13 @@
     {
       "title": "Deployment error",
       "description": "There has been a GitHub deployment error.",
-      "color": 10027008
+      "color": 10027008,
+      "fields": [
+        {
+          "name": "Link",
+          "value": "this is only a test"
+        }
+      ]
     }
   ]
 }
