@@ -1,9 +1,12 @@
 {
+  "username": "GitHub Alerts",
+  "avatar_url": "https://raw.githubusercontent.com/thisisthemurph/advancely/main/client/src/assets/logo.png",
   "content": "This is only a test",
   "embeds": [
     {
-      "title": "The title of the embed",
-      "description": "This is the content of the embed. There is some content here."
+      "title": "Deployment error",
+      "description": "There has been a GitHub deployment error.",
+      "color": "FF4136"
     }
   ]
 }
