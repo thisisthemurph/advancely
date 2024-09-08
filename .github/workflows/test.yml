@@ -38,7 +38,7 @@ jobs:
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           NODE_VERSION="${{ matrix.node-version }}"
           jq --arg url "$RUN_URL" --arg version "$NODE_VERSION" \
-            .embeds[0].url = $url' \
+            '.embeds[0].url = $url' \
             .github/assets/alert.json > .github/assets/alert.json
 
       - run: cat .github/assets/alert.json
