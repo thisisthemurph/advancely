@@ -30,3 +30,13 @@ jobs:
 
       - run: npm run test
         working-directory: client
+
+  discord-alert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Discord Webhook Action
+        uses: tsickert/discord-webhook@v5.3.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          content: "This is only a test"
