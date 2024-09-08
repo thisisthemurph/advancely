@@ -37,6 +37,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - run: |
+          echo "🚨 Test failed! View the details here: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
       - name: Discord Webhook Action
         uses: tsickert/discord-webhook@v5.3.0
         with:
