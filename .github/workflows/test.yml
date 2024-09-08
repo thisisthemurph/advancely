@@ -38,8 +38,8 @@ jobs:
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           NODE_VERSION="${{ matrix.node-version }}"
           jq --arg url "$RUN_URL" --arg version "$NODE_VERSION" \
-            '.content = "this is only a test \($version)" | .embeds[0].url = $url' \
-            .github/assets/alert.json > temp.json && mv temp.json .github/assets/alert.json
+            '.content = "React tests failed for Node.js version \($version)" | .embeds[0].url = $url' \
+            .github/assets/alert.json > .github/assets/alert.json
 
       - run: cat .github/assets/alert.json
 
@@ -49,10 +49,3 @@ jobs:
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
           raw-data: .github/assets/alert.json
-
-      # - name: Success Notification
-      #   if: success()
-      #   uses: tsickert/discord-webhook@v5.3.0
-      #   with:
-      #     webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-      #     content: "Tests passed successfully on Node.js ${{ matrix.node-version }} 🎉"
