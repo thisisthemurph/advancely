@@ -5,8 +5,7 @@
   "embeds": [
     {
       "title": "Deployment error",
-      "description": "There has been a GitHub deployment error.",
-      "color": "FF4136"
+      "description": "There has been a GitHub deployment error."
     }
   ]
 }
