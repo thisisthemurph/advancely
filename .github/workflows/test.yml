@@ -43,8 +43,12 @@ jobs:
       - run: |
           echo "🚨 Test failed! View the details here: $RUN_URL"
 
+      - name: Update JSON
+        run: |
+          jq --arg url "$RUN_URL" 'embeds[0].url = $url' .github/assets/alert.json > tmp.json && mv tmp.json ${{ github.run_id }}.json
+
       - name: Discord Webhook Action
         uses: tsickert/discord-webhook@v5.3.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-          raw-data: .github/assets/alert.json
+          raw-data: ${{ github.run_id }}.json
