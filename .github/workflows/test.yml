@@ -34,11 +34,12 @@ jobs:
         working-directory: client
 
       - name: Update JSON
-        # if: failure()
         run: |
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           NODE_VERSION="${{ matrix.node-version }}"
-          jq --arg url "$RUN_URL" --arg version "$NODE_VERSION" '.content = "There has been an unexpected deployment error running React tests with Node.js version: \($version)" | .embeds[0].url = $url' .github/assets/alert.json > .github/assets/alert.json
+          jq --arg url "$RUN_URL" --arg version "$NODE_VERSION" \
+            '.content = "There has been an unexpected deployment error running React tests with Node.js version: \($version)" | .embeds[0].url = $url' \
+            .github/assets/alert.json > .github/assets/alert.json
 
       - name: Discord Webhook Action
         # if: failure()
