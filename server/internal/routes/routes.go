@@ -56,8 +56,13 @@ func setUpMiddlewares(e *echo.Echo, app *application.App) {
 	}
 
 	e.Use(middleware.Recover())
+
+	allowOrigins := []string{app.Config.ClientBaseURL}
+	if app.Config.Environment.IsDevelopment() {
+		allowOrigins = append(allowOrigins, "http://localhost:*")
+	}
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{app.Config.ClientBaseURL},
+		AllowOrigins:     allowOrigins,
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete},
 		AllowCredentials: true,
