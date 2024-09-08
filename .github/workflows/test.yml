@@ -40,15 +40,12 @@ jobs:
       - name: Set GitHub run URL
         run: echo "RUN_URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_ENV
 
-      - run: |
-          echo "🚨 Test failed! View the details here: $RUN_URL"
-
       - name: Update JSON
         run: |
-          jq --arg url "$RUN_URL" '.embeds[0].url = $url' .github/assets/alert.json > tmp.json && mv tmp.json ${{ github.run_id }}.json
+          jq --arg url "$RUN_URL" '.embeds[0].url = $url' .github/assets/alert.json > tmp.json && mv tmp.json alert.json
 
       - name: Discord Webhook Action
         uses: tsickert/discord-webhook@v5.3.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-          raw-data: ${{ github.run_id }}.json
+          raw-data: alert.json

@@ -1,11 +1,12 @@
 {
   "username": "GitHub Alerts",
+  "content": "🚨 There has been an unexpected deployment error",
   "avatar_url": "https://raw.githubusercontent.com/thisisthemurph/advancely/main/client/src/assets/logo.png",
   "embeds": [
     {
-      "title": "GitHub Run",
+      "title": "View GitHub run",
       "url": "https://github.com/thisisthemurph/advancely/actions",
-      "description": "There has been a GitHub deployment error.",
+      "description": "Click the link to view the errored run in GitHub.",
       "color": 10027008
     }
   ]
