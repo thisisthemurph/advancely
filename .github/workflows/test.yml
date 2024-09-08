@@ -1,4 +1,4 @@
-name: Run Vitest Tests
+name: Run Tests
 
 on:
   push:
@@ -10,11 +10,13 @@ on:
 
 jobs:
   test:
+    name: React tests
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
         node-version: [16.x, 18.x]
+      fail-fast: true
 
     steps:
       - name: Checkout code
@@ -30,3 +32,19 @@ jobs:
 
       - run: npm run test
         working-directory: client
+
+      - name: Update Discord notification JSON
+        if: failure()
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          NODE_VERSION="${{ matrix.node-version }}"
+          jq --arg url "$RUN_URL" --arg version "$NODE_VERSION" \
+            '.content = "React tests failed for Node.js version \($version)" | .embeds[0].url = $url' \
+            .github/assets/alert.json > temp.json && mv temp.json .github/assets/alert.json
+
+      - name: Failure Notification
+        if: failure()
+        uses: tsickert/discord-webhook@v5.3.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          raw-data: .github/assets/alert.json
