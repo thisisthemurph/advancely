@@ -1,0 +1,9 @@
+{
+  "content": "This is only a test",
+  "embeds": [
+    {
+      "title": "The title of the embed",
+      "description": "This is the content of the embed. There is some content here."
+    }
+  ]
+}
