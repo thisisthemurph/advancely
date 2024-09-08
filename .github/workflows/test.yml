@@ -32,12 +32,13 @@ jobs:
       - run: npm run test
         working-directory: client
 
-      - name: Set GitHub run URL
+      - name: Update JSON
         run: |
-          echo "RUN_URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_ENV
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           jq --arg url "$RUN_URL" '.embeds[0].url = $url' .github/assets/alert.json > tmp.json && mv tmp.json alert.json
 
       - name: Discord Webhook Action
+        if: failure()
         uses: tsickert/discord-webhook@v5.3.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
