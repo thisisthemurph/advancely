@@ -41,7 +41,9 @@ jobs:
             '.content = "There has been an unexpected deployment error running React tests with Node.js version: \($version)" | .embeds[0].url = $url' \
             .github/assets/alert.json > .github/assets/alert.json
 
-      - name: Discord Webhook Action
+      - run: cat .github/assets/alert.json
+
+      - name: Failure Notification
         # if: failure()
         uses: tsickert/discord-webhook@v5.3.0
         with:
