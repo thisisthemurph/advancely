@@ -38,6 +38,8 @@ jobs:
           echo "RUN_URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_ENV
           jq --arg url "$RUN_URL" '.embeds[0].url = $url' .github/assets/alert.json > tmp.json && mv tmp.json alert.json
 
+      - run: echo "$RUN_URL"
+
       - name: Discord Webhook Action
         # if: failure()
         uses: tsickert/discord-webhook@v5.3.0
