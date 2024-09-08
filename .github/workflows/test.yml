@@ -50,9 +50,9 @@ jobs:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
           raw-data: .github/assets/alert.json
 
-      - name: Success Notification
-        if: success()
-        uses: tsickert/discord-webhook@v5.3.0
-        with:
-          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-          content: "Tests passed successfully on Node.js ${{ matrix.node-version }} 🎉"
+      # - name: Success Notification
+      #   if: success()
+      #   uses: tsickert/discord-webhook@v5.3.0
+      #   with:
+      #     webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+      #     content: "Tests passed successfully on Node.js ${{ matrix.node-version }} 🎉"
