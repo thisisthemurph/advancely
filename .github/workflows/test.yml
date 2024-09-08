@@ -10,6 +10,7 @@ on:
 
 jobs:
   test:
+    name: React tests
     runs-on: ubuntu-latest
 
     strategy:
@@ -31,20 +32,14 @@ jobs:
       - run: npm run test
         working-directory: client
 
-  discord-alert:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Set GitHub run URL
-        run: echo "RUN_URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_ENV
-
-      - name: Update JSON
+        # if: failure()
         run: |
+          echo "RUN_URL=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_ENV
           jq --arg url "$RUN_URL" '.embeds[0].url = $url' .github/assets/alert.json > tmp.json && mv tmp.json alert.json
 
       - name: Discord Webhook Action
+        # if: failure()
         uses: tsickert/discord-webhook@v5.3.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK }}

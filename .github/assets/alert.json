@@ -1,6 +1,6 @@
 {
   "username": "GitHub Alerts",
-  "content": "🚨 There has been an unexpected deployment error",
+  "content": "There has been an unexpected deployment error",
   "avatar_url": "https://raw.githubusercontent.com/thisisthemurph/advancely/main/client/src/assets/logo.png",
   "embeds": [
     {
