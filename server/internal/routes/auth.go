@@ -9,6 +9,7 @@ import (
 	"advancely/internal/validation"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/nedpals/supabase-go"
@@ -188,12 +189,13 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 		user, err := getOrSignupSupabaseUser(ctx, form)
 		if err != nil {
 			h.Logger.Error("failed to sign up in supabase", "error", err)
-			return echo.NewHTTPError(500)
+			msg := fmt.Sprintf("Failed to create user with email address %s.", form.UserEmail)
+			return echo.NewHTTPError(500, msg)
 		}
 		userID, err := uuid.Parse(user.ID)
 		if err != nil {
 			h.Logger.Error("failed to parse user ID", "error", err)
-			return echo.NewHTTPError(http.StatusInternalServerError, "Invalid user ID")
+			return echo.NewHTTPError(http.StatusInternalServerError, "Invalid user ID.")
 		}
 
 		// CreateCompany the company
@@ -204,7 +206,8 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 		})
 		if err != nil {
 			h.Logger.Error("failed to create company", "error", err)
-			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create company")
+			msg := fmt.Sprintf("Failed to create company with name %s.", form.CompanyName)
+			return echo.NewHTTPError(http.StatusInternalServerError, msg)
 		}
 
 		// CreateCompany the initial admin user profile
@@ -219,7 +222,7 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 		})
 		if err != nil {
 			h.Logger.Error("failed to create user profile", "error", err)
-			return echo.NewHTTPError(500, "Failed to create profile")
+			return echo.NewHTTPError(500, "Failed to create your user profile")
 		}
 
 		return c.JSON(http.StatusOK, SignupResponse{

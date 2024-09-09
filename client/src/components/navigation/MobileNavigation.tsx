@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { memo } from "react";
 import { Link, LinkProps } from "react-router-dom";
+
 import {
   Sheet,
   SheetClose,
@@ -10,17 +11,12 @@ import {
 } from "../ui/sheet";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
-import { NavLinkProps, NavLinks } from ".";
+import { NavigationAuthenticationProps, NavigationProps } from ".";
 import { SheetCloseLinkButton as SheetLinkButton } from "../ui/LinkButton";
 import Logo from "../Logo.tsx";
+import { NavLinkProps } from "./navigationMenuItems.ts";
 
-interface MobileNavigationProps {
-  menuItems: NavLinks;
-  isAuthenticated: boolean;
-  logout: () => Promise<void>;
-}
-
-const MobileNavigation = memo(({ menuItems, isAuthenticated, logout }: MobileNavigationProps) => {
+const MobileNavigation = memo(({ menuItems, isAuthenticated, logout }: NavigationProps) => {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -39,7 +35,7 @@ const MobileNavigation = memo(({ menuItems, isAuthenticated, logout }: MobileNav
             <span className="text-slate-600 italic font-semibold group-hover:-translate-x-12 transition-all">Advancely</span>
           </MobileNavLink>
         </SheetHeader>
-        <MobileNavMenu items={menuItems} isAuthenticated={isAuthenticated} logout={logout} />
+        <MobileNavMenu menuItems={menuItems} isAuthenticated={isAuthenticated} logout={logout} />
       </SheetContent>
     </Sheet>
   )
@@ -65,11 +61,11 @@ function HamburgerIcon() {
   );
 }
 
-function MobileNavMenu({ items, isAuthenticated, logout }: { items: NavLinks, isAuthenticated: boolean, logout: () => Promise<void> }) {
+function MobileNavMenu({ menuItems, isAuthenticated, logout }: NavigationProps) {
   return (
     <div className="flex flex-col gap-8">
       <div className="gap-2 grid grid-cols-2">
-        {items.map((link) => (
+        {menuItems.map((link) => (
           <CardLink key={link.label} {...link} />
         ))}
       </div>
@@ -78,7 +74,7 @@ function MobileNavMenu({ items, isAuthenticated, logout }: { items: NavLinks, is
   );
 }
 
-const AdditionalButtons = ({isAuthenticated, logout}: {isAuthenticated: boolean, logout: () => Promise<void>}) => {
+const AdditionalButtons = ({ isAuthenticated, logout }: NavigationAuthenticationProps) => {
   return (
     <div className="flex justify-between gap-2">
       {!isAuthenticated && (

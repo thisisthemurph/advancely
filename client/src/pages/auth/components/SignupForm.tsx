@@ -15,9 +15,9 @@ import {
   FormLabel,
   FormMessage,
 } from "../../../components/ui/form";
-import { ErrorResponse } from "../../../api/api";
 import { useAuth } from "../../../hooks/useAuth.tsx";
 import { SignupRequest, SignupResponse } from "../../../hooks/AuthContext.tsx";
+import ApiError from "../../../api/error.ts";
 
 const CompanyNameInfo =
   "Set the name of your company, this is the name all of your employees will see themselves under when they sign in.";
@@ -46,7 +46,7 @@ interface SignupFormParams {
 
 function SignupForm({ onSignupComplete }: SignupFormParams) {
   const { signup } = useAuth();
-  const [error, setError] = useState<null | ErrorResponse>(null);
+  const [error, setError] = useState<null | ApiError>(null);
   const [emailPlaceholder, setEmailPlaceholder] = useState(
     "your.name@company.com"
   );
@@ -54,21 +54,24 @@ function SignupForm({ onSignupComplete }: SignupFormParams) {
   const { control, getValues, handleSubmit, ...form } = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
+      name: "Company",
+      firstName: "Mike",
+      lastName: "Murphy",
+      email: "mikhl90@gmail.com",
+      password: "password",
     },
   });
 
   const { mutateAsync: signupMutation, isPending: isSignupPending } =
-    useMutation<SignupResponse, ErrorResponse, SignupRequest>({
+    useMutation<SignupResponse, ApiError, SignupRequest>({
       mutationFn: signup,
       onSuccess: () => {
+        console.log("onSuccess");
         onSignupComplete();
       },
       onError: (error) => {
+        console.log("onError");
+        console.error(error);
         setError(error);
       },
     });

@@ -1,26 +1,23 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import { NavLinkProps, NavLinks } from ".";
+import { NavigationAuthenticationProps, NavigationProps } from ".";
 import LinkButton from "../ui/LinkButton";
-import {Button} from "../ui/button.tsx";
+import { Button } from "../ui/button.tsx";
+import { NavLinkProps } from "./navigationMenuItems.ts";
 
-interface DesktopNavigationProps {
-  isAuthenticated: boolean;
-  menuItems: NavLinks;
-}
-
-const DesktopNavigation = memo(({ isAuthenticated, menuItems }: DesktopNavigationProps) => (
+const DesktopNavigation = memo(({ isAuthenticated, menuItems, logout }: NavigationProps) => (
   <nav className="flex items-center gap-8">
     <ul className="space-x-8">
       {menuItems.map((link) => (
         <DesktopNavLink key={link.label} {...link} />
       ))}
     </ul>
-    <AdditionalButtons isAuthenticated={isAuthenticated} />
+    <AdditionalButtons isAuthenticated={isAuthenticated} logout={logout} />
   </nav>
 ));
 
-const AdditionalButtons = ({isAuthenticated}: {isAuthenticated: boolean}) => {
+
+const AdditionalButtons = ({ isAuthenticated, logout }: NavigationAuthenticationProps) => {
   return (
     <div className="flex gap-2">
       {
@@ -34,7 +31,7 @@ const AdditionalButtons = ({isAuthenticated}: {isAuthenticated: boolean}) => {
             </LinkButton>
           </> :
           <>
-            <Button variant="outline">Log out</Button>
+            <Button variant="outline" onClick={logout}>Log out</Button>
             <LinkButton to="/settings">Settings</LinkButton>
           </>
       }

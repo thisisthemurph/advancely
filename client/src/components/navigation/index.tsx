@@ -1,48 +1,19 @@
+import { useNavigate } from "react-router-dom";
 import { useMediaQuery } from "usehooks-ts";
+
 import DesktopNavigation from "./DesktopNavigation";
 import MobileNavigation from "./MobileNavigation";
 import { useAuth } from "../../hooks/useAuth.tsx";
-import { useNavigate } from "react-router-dom";
+import { navigationMenuItems, NavLinks } from "./navigationMenuItems.ts";
 
-type ShowWhen = "authenticated" | "unauthenticated" | "always";
-
-export interface NavLinkProps {
-  label: string;
-  description: string;
-  href: string;
-  fullWidth?: boolean;
-  showWhen?: ShowWhen;
+export interface NavigationAuthenticationProps {
+  isAuthenticated: boolean;
+  logout: () => Promise<void>;
 }
 
-export type NavLinks = NavLinkProps[];
-
-const links: NavLinks = [
-  {
-    label: "Home",
-    href: "/",
-    description: "There's no place like home!",
-  },
-  {
-    label: "About",
-    href: "/",
-    description: "Find out a little of who we are and what we can do for you.",
-  },
-  {
-    label: "Pricing",
-    href: "/",
-    description:
-      "Take a look at our competitive pricing models and see what best suits your needs.",
-    fullWidth: true,
-    showWhen: "unauthenticated",
-  },
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    description: "Your dashboard contains all the things you need at the touch of a button.",
-    fullWidth: true,
-    showWhen: "authenticated",
-  },
-];
+export interface NavigationProps extends NavigationAuthenticationProps {
+  menuItems: NavLinks;
+}
 
 function Navigation() {
   const navigate = useNavigate();
@@ -53,7 +24,7 @@ function Navigation() {
     logout().finally(() => { navigate("/login"); });
   }
 
-  const filteredLinks = links.filter((link) => {
+  const filteredMenu = navigationMenuItems.filter((link) => {
     switch (link.showWhen) {
       case "always":
       case undefined:
@@ -68,9 +39,9 @@ function Navigation() {
   });
 
   return isDesktop ? (
-    <DesktopNavigation menuItems={filteredLinks} isAuthenticated={isAuthenticated} />
+    <DesktopNavigation menuItems={filteredMenu} isAuthenticated={isAuthenticated} logout={handleLogout} />
   ) : (
-    <MobileNavigation menuItems={filteredLinks} isAuthenticated={isAuthenticated} logout={handleLogout} />
+    <MobileNavigation menuItems={filteredMenu} isAuthenticated={isAuthenticated} logout={handleLogout} />
   );
 }
 

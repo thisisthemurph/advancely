@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useEffect, useState } from "react";
-import { handleErrorResponse } from "../api/api.ts";
+import ApiError from "../api/error.ts";
 
 const SESSION_STORE_KEY = "session";
 const IS_AUTHED_STORE_KEY = "authed";
@@ -9,9 +9,8 @@ export interface AuthContextProps {
   isAuthenticated: boolean;
   user: SessionUser | null;
   session: Session | null;
-  login: (params: LoginParams) => Promise<Session>;
-  loginWithToken: (token: string) => Promise<void>;
-  logout: () => Promise<boolean>;
+  login: (params: LoginParams) => Promise<void>;
+  logout: () => Promise<void>;
   updateSession: (session: Session) => Promise<void>;
   signup: (data: SignupRequest) => Promise<SignupResponse>;
   emailConfirmed: (data: { token: string }) => Promise<boolean>;
@@ -87,8 +86,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [session]);
 
-  const post = async function <TReq>(endpoint: string, data: TReq): Promise<Response> {
-    return await fetch(endpoint, {
+  const post = async function <TReq, TResp>(endpoint: string, data: TReq): Promise<TResp> {
+    const resp = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -96,51 +95,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       credentials: "include",
       body: JSON.stringify(data),
     });
-  }
 
-  const login = async (data: LoginParams): Promise<Session> => {
-    const endpoint = `${API_BASE_URL}/auth/login`;
-    const resp = await post(endpoint, data);
     if (!resp.ok) {
-      return Promise.reject(await handleErrorResponse(resp));
+      const errorBody = await resp.json();
+      const message = errorBody
+        ? errorBody.message
+        : `Error making post. Status: ${resp.status} statusText: ${resp.statusText}`;
+
+      throw new ApiError(resp.status, resp.statusText, message);
     }
 
-    const newSession = await resp.json();
-    setSession(newSession);
-    setIsAuthenticated(true);
-    return newSession;
+    const responseData: TResp = await resp.json();
+    return responseData;
+  }
+
+  const login = async ({email, password}: LoginParams) => {
+    const endpoint = `${API_BASE_URL}/auth/login`;
+
+    try {
+      const session = await post<LoginParams, Session>(endpoint, {email, password});
+      setSession(session);
+      setIsAuthenticated(true);
+    } catch {
+      setSession(null);
+      setIsAuthenticated(false);
+      throw new Error("There was an error logging you in.");
+    }
   }
 
   const signup = async (data: SignupRequest): Promise<SignupResponse> => {
     const endpoint = `${API_BASE_URL}/auth/signup`;
     const genericError = "There has been an unknown error signing you up, please try again later."
-    const resp = await post(endpoint, data);
 
-    if (!resp.ok) {
-      return Promise.reject(handleErrorResponse(resp, genericError));
+    try {
+      return await post<SignupRequest, SignupResponse>(endpoint, data);
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 400)) {
+        throw new Error("Please ensure the form is complete.")
+      } else if (error instanceof ApiError && error.status === 500) {
+        throw error;
+      }
+      throw new Error(genericError);
     }
-    return resp.json();
-  }
-
-  const loginWithToken = async (token: string) => {
-    console.log(token);
-    throw Error("Not implemented");
   }
 
   const logout = async () => {
     const endpoint = `${API_BASE_URL}/auth/logout`;
-    const resp = await post(endpoint, {})
 
-    setSession(null);
-    setIsAuthenticated(false);
-
-    return resp.ok;
+    try {
+      await post(endpoint, {});
+    } finally {
+      setSession(null);
+      setIsAuthenticated(false);
+    }
   }
 
   const emailConfirmed = async (data: { token: string }): Promise<boolean> => {
     const endpoint = `${import.meta.env.VITE_API_BASE_URL}/auth/confirm-email`;
-    const resp = await post(endpoint, data);
-    return resp.ok;
+
+    try {
+      await post<{token: string}, unknown>(endpoint, data);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   const updateSession = async (newSession: Session) => {
@@ -152,7 +170,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       emailConfirmed,
       isAuthenticated,
       login,
-      loginWithToken,
       logout,
       session,
       signup,

@@ -29,13 +29,7 @@ interface LoginFormProps {
 }
 
 function LoginForm({ onSuccess }: LoginFormProps) {
-  const auth = useAuth();
-
-  console.log({
-    base: import.meta.env.BASE_URL,
-    mode: import.meta.env.MODE,
-  });
-
+  const { login } = useAuth();
   const form = useForm<FormInputs>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -45,13 +39,9 @@ function LoginForm({ onSuccess }: LoginFormProps) {
   });
 
   function onSubmit(values: FormInputs) {
-    auth
-      .login(values)
-      .then((session) => {
-        console.log(session);
-        onSuccess();
-      })
-      .catch(() => alert("error logging in"));
+    login(values)
+      .then(onSuccess)
+      .catch((error) => alert(error.message));
   }
 
   return (
