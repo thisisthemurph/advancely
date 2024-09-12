@@ -32,6 +32,7 @@ func NewRouter(app *application.App) *echo.Echo {
 func buildAPIHandlers(app *application.App) []RouteMaker {
 	return []RouteMaker{
 		NewAuthHandler(app.Supabase, app.Store, app.Config, app.Logger),
+		NewPermissionsHandler(app.Store, app.Config, app.Logger),
 	}
 }
 

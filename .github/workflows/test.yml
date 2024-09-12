@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  test:
-    name: React tests
+  client-tests:
+    name: Run client tests
     runs-on: ubuntu-latest
 
     strategy:
@@ -41,6 +41,34 @@ jobs:
           jq --arg url "$RUN_URL" --arg version "$NODE_VERSION" \
             '.content = "React tests failed for Node.js version \($version)" | .embeds[0].url = $url' \
             .github/assets/alert.json > temp.json && mv temp.json .github/assets/alert.json
+
+      - name: Failure Notification
+        if: failure()
+        uses: tsickert/discord-webhook@v5.3.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          raw-data: .github/assets/alert.json
+
+  server-tests:
+    name: Run server tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      - name: Install dependencies
+        working-directory: server
+        run: go mod tidy
+
+      - name: Run tests
+        working-directory: server
+        run: go test -v ./...
 
       - name: Failure Notification
         if: failure()
