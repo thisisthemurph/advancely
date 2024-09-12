@@ -50,11 +50,11 @@ func (s *PermissionsStore) Role(id int, companyID *uuid.UUID) (model.RoleWithPer
 
 	var rpList []rolePermission
 	if err := s.Select(&rpList, stmt, id, companyID); err != nil {
-		return model.RoleWithPermissions{}, fmt.Errorf("failed to get role with ID %d: %w", id, err)
+		return model.RoleWithPermissions{}, err
 	}
 
 	if rpList == nil {
-		return model.RoleWithPermissions{}, fmt.Errorf("failed to get role with ID %d: %w", id, ErrRoleNotFound)
+		return model.RoleWithPermissions{}, ErrRoleNotFound
 	}
 
 	if companyID != nil && *companyID == uuid.Nil {
@@ -205,12 +205,31 @@ func (s *PermissionsStore) Permission(id int) (model.Permission, error) {
 			on p.group_id = g.id
 		where p.id = $1;`
 
-	var permission model.Permission
-	if err := s.Get(&permission, stmt, id); err != nil {
+	var result struct {
+		ID          int    `db:"id"`
+		Name        string `db:"name"`
+		Description string `db:"description"`
+		GroupID     int    `db:"group_id"`
+		GroupName   string `db:"group_name"`
+		GroupDesc   string `db:"group_description"`
+	}
+
+	if err := s.Get(&result, stmt, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return model.Permission{}, ErrPermissionNotFount
 		}
 		return model.Permission{}, err
+	}
+
+	permission := model.Permission{
+		ID:          result.ID,
+		Name:        result.Name,
+		Description: result.Description,
+		Group: model.PermissionGroup{
+			ID:          result.GroupID,
+			Name:        result.GroupName,
+			Description: result.GroupDesc,
+		},
 	}
 	return permission, nil
 }
@@ -218,14 +237,14 @@ func (s *PermissionsStore) Permission(id int) (model.Permission, error) {
 func (s *PermissionsStore) AssignPermissionToRole(roleID, permissionID int, companyID uuid.UUID) error {
 	role, err := s.Role(roleID, &companyID)
 	if err != nil {
-		return fmt.Errorf("failed to find role with ID %d: %w", roleID, err)
+		return err
 	}
 	if role.IsSystemRole {
 		return ErrCannotUpdateSystemRole
 	}
 
 	if _, err = s.Permission(permissionID); err != nil {
-		return fmt.Errorf("failed to find permission: %w", err)
+		return err
 	}
 
 	stmt := "insert into security.role_permissions (role_id, permission_id) values ($1, $2)"
@@ -243,7 +262,7 @@ func (s *PermissionsStore) AssignPermissionToRole(roleID, permissionID int, comp
 func (s *PermissionsStore) RemovePermissionFromRole(roleID, permissionID int, companyID uuid.UUID) error {
 	role, err := s.Role(roleID, &companyID)
 	if err != nil {
-		return fmt.Errorf("failed to find role with ID %d: %w", roleID, err)
+		return err
 	}
 	if role.IsSystemRole {
 		return ErrCannotUpdateSystemRole
@@ -259,7 +278,7 @@ func (s *PermissionsStore) RemovePermissionFromRole(roleID, permissionID int, co
 func (s *PermissionsStore) AssignRoleToUser(roleID int, userID, companyID uuid.UUID) error {
 	_, err := s.Role(roleID, &companyID)
 	if err != nil {
-		return fmt.Errorf("failed to find role: %w", err)
+		return err
 	}
 
 	stmt := "insert into security.user_roles (user_id, role_id) values ($1, $2);"
@@ -271,6 +290,15 @@ func (s *PermissionsStore) AssignRoleToUser(roleID int, userID, companyID uuid.U
 		return fmt.Errorf("failed to insert user role: %w", err)
 	}
 	return nil
+}
+
+func (s *PermissionsStore) AssignSystemRoleToUser(role model.SystemRole, userID, companyID uuid.UUID) error {
+	var roleId int
+	stmt := "select id from security.roles where name = $1 and is_system_role = true;"
+	if err := s.Get(&roleId, stmt, role); err != nil {
+		return err
+	}
+	return s.AssignRoleToUser(roleId, userID, companyID)
 }
 
 func (s *PermissionsStore) RemoveRoleFromUser(roleID int, userID, companyID uuid.UUID) error {

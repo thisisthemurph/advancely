@@ -52,7 +52,11 @@ type PermissionsStore interface {
 	// Users cannot remove a permission from a system role.
 	RemovePermissionFromRole(roleID, permissionID int, companyID uuid.UUID) error
 	// AssignRoleToUser assigns a role to a given user.
+	// A success is returned if the role already exists for the user.
 	AssignRoleToUser(roleID int, userID, companyID uuid.UUID) error
+	// AssignSystemRoleToUser assigns the specified system role to a given user.
+	// A success is returned if the role already exists for the user.
+	AssignSystemRoleToUser(role model.SystemRole, userID, companyID uuid.UUID) error
 	// RemoveRoleFromUser disassociates the given role from the user.
 	RemoveRoleFromUser(roleID int, userID, companyID uuid.UUID) error
 }

@@ -4,6 +4,10 @@ import (
 	"github.com/google/uuid"
 )
 
+type SystemRole string
+
+const SystemRoleAdmin SystemRole = "Admin"
+
 // Role represents the security.roles table.
 type Role struct {
 	ID           int        `db:"id" json:"id"`
@@ -21,9 +25,9 @@ type CreateRole struct {
 }
 
 type PermissionGroup struct {
-	ID          int    `db:"group_id" json:"id"`
-	Name        string `db:"group_name" json:"name"`
-	Description string `db:"group_description" json:"description"`
+	ID          int    `db:"id" json:"id"`
+	Name        string `db:"name" json:"name"`
+	Description string `db:"description" json:"description"`
 }
 
 type Permission struct {

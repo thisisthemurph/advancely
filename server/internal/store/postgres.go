@@ -3,7 +3,7 @@ package store
 import (
 	"errors"
 	"fmt"
-	"github.com/jackc/pgconn"
+	"github.com/lib/pq"
 )
 
 // https://www.postgresql.org/docs/current/errcodes-appendix.html#ERRCODES-TABLE
@@ -11,8 +11,8 @@ import (
 type PgErr string
 
 const (
-	PgErrNone                PgErr = "non-PostgresSQL-error"
-	PgErrCodeUniqueViolation PgErr = "23505"
+	PgErrNone                PgErr = "-"
+	PgErrCodeUniqueViolation PgErr = "unique_violation"
 )
 
 // Error implements the built-in error interface
@@ -45,7 +45,7 @@ func stringToPgErr(code string) (PgErr, bool) {
 	switch code {
 	case string(PgErrNone), "":
 		return PgErrNone, false
-	case "23505":
+	case "unique_violation":
 		return PgErrCodeUniqueViolation, true
 	default:
 		return PgErr(code), false
@@ -53,10 +53,10 @@ func stringToPgErr(code string) (PgErr, bool) {
 }
 
 func checkPgErr(err error) PgErr {
-	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) {
+	var pqErr *pq.Error
+	if !errors.As(err, &pqErr) {
 		return PgErrNone
 	}
-	pge, _ := stringToPgErr(pgErr.Code)
+	pge, _ := stringToPgErr(pqErr.Code.Name())
 	return pge
 }

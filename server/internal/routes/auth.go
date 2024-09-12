@@ -24,20 +24,22 @@ func NewAuthHandler(
 	logger *slog.Logger,
 ) AuthHandler {
 	return AuthHandler{
-		Supabase:     sb,
-		UserStore:    s.UserStore,
-		CompanyStore: s.CompanyStore,
-		Config:       config,
-		Logger:       logger,
+		Supabase:         sb,
+		UserStore:        s.UserStore,
+		CompanyStore:     s.CompanyStore,
+		PermissionsStore: s.PermissionsStore,
+		Config:           config,
+		Logger:           logger,
 	}
 }
 
 type AuthHandler struct {
-	Supabase     *supabase.Client
-	UserStore    contract.UserStore
-	CompanyStore contract.CompanyStore
-	Config       application.AppConfig
-	Logger       *slog.Logger
+	Supabase         *supabase.Client
+	UserStore        contract.UserStore
+	CompanyStore     contract.CompanyStore
+	PermissionsStore contract.PermissionsStore
+	Config           application.AppConfig
+	Logger           *slog.Logger
 }
 
 func (h AuthHandler) MakeRoutes(e *echo.Group) {
@@ -223,6 +225,14 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 		if err != nil {
 			h.Logger.Error("failed to create user profile", "error", err)
 			return echo.NewHTTPError(500, "Failed to create your user profile")
+		}
+
+		// Assign the Admin role to the user
+
+		err = h.PermissionsStore.AssignSystemRoleToUser(model.SystemRoleAdmin, userID, company.ID)
+		if err != nil {
+			h.Logger.Error("failed to add admin role to user", "error", err)
+			return echo.NewHTTPError(500, "Failed to assign appropriate permissions to your user")
 		}
 
 		return c.JSON(http.StatusOK, SignupResponse{
