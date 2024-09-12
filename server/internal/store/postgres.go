@@ -27,9 +27,9 @@ func (pge PgErr) String() string {
 	s := string(pge)
 	if pge.Error() == string(PgErrNone) || s == "" {
 		if s == "" {
-			s = "empty-string"
+			return "non-PostgresSQL error code: empty-string"
 		}
-		return fmt.Sprintf("non-PostgresSQL error code: %s", s)
+		return "non-PostgresSQL error code"
 	}
 	if _, ok := stringToPgErr(s); !ok {
 		return fmt.Sprintf("unhandled PostgresSQL error code: %s", s)

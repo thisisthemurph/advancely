@@ -2,7 +2,7 @@ package store
 
 import (
 	"errors"
-	"github.com/jackc/pgconn"
+	"github.com/lib/pq"
 	"testing"
 )
 
@@ -11,16 +11,16 @@ func TestCheckPgErr(t *testing.T) {
 		err      error
 		expected PgErr
 	}{
-		{&pgconn.PgError{Code: "23505"}, PgErrCodeUniqueViolation},
+		{&pq.Error{Code: "23505"}, PgErrCodeUniqueViolation},
 		{errors.New("some other error"), PgErrNone},
-		{nil, PgErrNone}, // Check if nil returns PgErrNone
-		{&pgconn.PgError{Code: "99999"}, PgErr("99999")}, // Check an unhandled error code
+		{nil, PgErrNone},                      // Check if nil returns PgErrNone
+		{&pq.Error{Code: "99999"}, PgErrNone}, // Check an unhandled error code
 	}
 
 	for _, test := range tests {
 		result := checkPgErr(test.err)
 		if result != test.expected {
-			t.Errorf("checkPgErr(%v) = %v; want %v", test.err, result, test.expected)
+			t.Errorf("checkPgErr(%q) = %v; want %v", test.err, result, test.expected)
 		}
 	}
 }
@@ -31,7 +31,7 @@ func TestStringToPgErr(t *testing.T) {
 		expected PgErr
 		handled  bool
 	}{
-		{"23505", PgErrCodeUniqueViolation, true},
+		{"unique_violation", PgErrCodeUniqueViolation, true},
 		{"", PgErrNone, false},
 		{"99999", PgErr("99999"), false},
 	}
@@ -50,8 +50,8 @@ func TestPgErrString(t *testing.T) {
 		expected string
 	}{
 		{PgErr(""), "non-PostgresSQL error code: empty-string"},
-		{PgErrNone, "non-PostgresSQL error code: non-PostgresSQL-error"},
-		{PgErrCodeUniqueViolation, "23505"},
+		{PgErrNone, "non-PostgresSQL error code"},
+		{PgErrCodeUniqueViolation, "unique_violation"},
 		{PgErr("99999"), "unhandled PostgresSQL error code: 99999"},
 	}
 
