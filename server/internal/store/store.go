@@ -17,12 +17,14 @@ func NewStore(connectionString string) (*Store, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 	return &Store{
-		UserStore:    NewUserStore(db),
-		CompanyStore: NewCompanyStore(db),
+		UserStore:        NewUserStore(db),
+		CompanyStore:     NewCompanyStore(db),
+		PermissionsStore: NewPermissionsStore(db),
 	}, nil
 }
 
 type Store struct {
 	contract.UserStore
 	contract.CompanyStore
+	contract.PermissionsStore
 }

@@ -32,6 +32,7 @@ func NewRouter(app *application.App) *echo.Echo {
 func buildAPIHandlers(app *application.App) []RouteMaker {
 	return []RouteMaker{
 		NewAuthHandler(app.Supabase, app.Store, app.Config, app.Logger),
+		NewPermissionsHandler(app.Store, app.Config, app.Logger),
 	}
 }
 
@@ -52,7 +53,7 @@ func setUpMiddlewares(e *echo.Echo, app *application.App) {
 
 	// Show additional HTTP request logging in development only.
 	if app.Config.Environment.IsDevelopment() {
-		e.Use(middleware.Logger())
+		//e.Use(middleware.Logger())
 	}
 
 	e.Use(middleware.Recover())

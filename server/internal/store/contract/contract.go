@@ -8,6 +8,7 @@ import (
 type Store interface {
 	UserStore
 	CompanyStore
+	PermissionsStore
 }
 
 type UserStore interface {
@@ -33,4 +34,29 @@ type CompanyStore interface {
 	CreateCompany(c *model.Company) error
 	UpdateCompany(c *model.Company) error
 	DeleteCompany(id uuid.UUID) error
+}
+
+type PermissionsStore interface {
+	// Role returns the role associated with the given ID
+	// Passing nil for the companyID will allow searching for matching system roles
+	Role(id int, companyID *uuid.UUID) (model.RoleWithPermissions, error)
+	// Roles returns all roles (including system) for the given companyID
+	Roles(companyID uuid.UUID) ([]model.RoleWithPermissions, error)
+	CreateRole(r model.CreateRole) (model.Role, error)
+	UpdateRole(r *model.Role) error
+	DeleteRole(id int, companyID uuid.UUID) error
+	// AssignPermissionToRole associates a given permission with the given role.
+	// Users cannot associate any permissions with system roles.
+	AssignPermissionToRole(roleID, permissionID int, companyID uuid.UUID) error
+	// RemovePermissionFromRole removes the role - permission association.
+	// Users cannot remove a permission from a system role.
+	RemovePermissionFromRole(roleID, permissionID int, companyID uuid.UUID) error
+	// AssignRoleToUser assigns a role to a given user.
+	// A success is returned if the role already exists for the user.
+	AssignRoleToUser(roleID int, userID, companyID uuid.UUID) error
+	// AssignSystemRoleToUser assigns the specified system role to a given user.
+	// A success is returned if the role already exists for the user.
+	AssignSystemRoleToUser(role model.SystemRole, userID, companyID uuid.UUID) error
+	// RemoveRoleFromUser disassociates the given role from the user.
+	RemoveRoleFromUser(roleID int, userID, companyID uuid.UUID) error
 }

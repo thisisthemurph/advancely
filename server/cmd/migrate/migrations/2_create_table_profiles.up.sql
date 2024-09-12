@@ -10,7 +10,7 @@ create table if not exists profiles (
     primary key (id)
 );
 
-create trigger set_updated_at
+create trigger trg_set_updated_at_profiles
     before update on profiles
     for each row
         execute function update_updated_at_timestamp();
