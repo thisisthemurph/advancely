@@ -1,10 +1,14 @@
-name: Lint
+name: Go Lint
 
 on:
   pull_request:
+    paths:
+      - "server/**"
   push:
     branches:
       - "main"
+    paths:
+      - "server/**"
 
 env:
   GOLANGCI_LINT_VERSION: v1.60
