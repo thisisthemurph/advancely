@@ -51,11 +51,6 @@ func setUpMiddlewares(e *echo.Echo, app *application.App) {
 		}))
 	}
 
-	// Show additional HTTP request logging in development only.
-	if app.Config.Environment.IsDevelopment() {
-		//e.Use(middleware.Logger())
-	}
-
 	e.Use(middleware.Recover())
 
 	allowOrigins := []string{app.Config.ClientBaseURL}
