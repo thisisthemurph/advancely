@@ -21,11 +21,13 @@ jobs:
           go-version: "1.23"
       - name: Build
         run: go build -v ./...
+        working-directory: server
 
   lint:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
@@ -37,3 +39,4 @@ jobs:
         with:
           version: v1.56.0
           args: --timeout 3m --config .golangci.yaml
+          working-directory: server
