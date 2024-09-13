@@ -38,5 +38,5 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.56.0
-          args: --timeout 3m --config .golangci-lint.yaml
+          args: --timeout 3m --config ./server/golangci-lint.yaml
           working-directory: server
