@@ -38,7 +38,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-      - name: golangci-lint ${{ matrix.modules }} for Go ${{ matrix.go-version }}
+      - name: golangci-lint Go v${{ matrix.go-version }}
         uses: golangci/golangci-lint-action@v6
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
