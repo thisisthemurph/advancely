@@ -16,8 +16,3 @@ func saveInContext(c echo.Context, key UserContextKey, value any) {
 	// Persist the session in the request context
 	c.SetRequest(c.Request().WithContext(context.WithValue(c.Request().Context(), key, value)))
 }
-
-// removeFromContext sets the context key to nil.
-func removeFromContext(c echo.Context, key UserContextKey) {
-	saveInContext(c, key, nil)
-}

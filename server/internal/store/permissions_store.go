@@ -58,11 +58,6 @@ func (s *PermissionsStore) Role(id int, companyID *uuid.UUID) (model.RoleWithPer
 		return model.RoleWithPermissions{}, ErrRoleNotFound
 	}
 
-	if companyID != nil && *companyID == uuid.Nil {
-		// testing
-		companyID = nil
-	}
-
 	role := model.RoleWithPermissions{
 		Role: model.Role{
 			ID:           rpList[0].RoleID,
@@ -113,9 +108,9 @@ func (s *PermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithPermissio
 	roleMap := make(map[int]*model.RoleWithPermissions)
 
 	for _, rp := range rpList {
-		role, exists := roleMap[rp.RoleID]
+		_, exists := roleMap[rp.RoleID]
 		if !exists {
-			role = &model.RoleWithPermissions{
+			role := &model.RoleWithPermissions{
 				Role: model.Role{
 					ID:           rp.RoleID,
 					CompanyID:    rp.CompanyID,
