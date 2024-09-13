@@ -26,10 +26,13 @@ jobs:
   golangci-lint:
     needs: detect-modules
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         go-version: ["1.23", "stable"]
         modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+      fail-fast: true
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
