@@ -1,4 +1,4 @@
-create schema security;
+create schema if not exists security;
 
 -- Contains roles such as 'Admin' etc
 -- Users should be able to create their own roles in addition to predefined system roles
