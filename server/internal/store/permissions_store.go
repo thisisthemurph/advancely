@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
@@ -58,6 +59,7 @@ func (s *PermissionsStore) Role(id int, companyID *uuid.UUID) (model.RoleWithPer
 	}
 
 	if companyID != nil && *companyID == uuid.Nil {
+		// testing
 		companyID = nil
 	}
 
