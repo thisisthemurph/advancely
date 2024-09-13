@@ -53,6 +53,11 @@ jobs:
     name: Run server tests
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        go-version: ["1.23", "stable"]
+      fail-fast: true
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -60,15 +65,15 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: ${{ matrix.go-version }}
 
       - name: Install dependencies
-        working-directory: server
         run: go mod tidy
+        working-directory: server
 
       - name: Run tests
-        working-directory: server
         run: go test -v ./...
+        working-directory: server
 
       - name: Failure Notification
         if: failure()
