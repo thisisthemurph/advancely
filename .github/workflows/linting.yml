@@ -1,43 +1,27 @@
-name: Go CI
+name: golangci-lint
 
 on:
   push:
-    branches: ["main"]
-    # paths:
-    #   - "**.go"
+    branches:
+      - main
   pull_request:
-    branches: ["main"]
-    # paths:
-    #   - "**.go"
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  golangci:
+    name: lint
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: "1.23"
-      - name: Build
-        run: go build -v ./...
-        working-directory: server
-
-  lint:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.23"
-          cache: false
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.56.0
-          args: --timeout 3m --config .golangci-lint.yml
+          version: v1.58
           working-directory: server
