@@ -4,11 +4,18 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - "client/**"
 
 jobs:
   lint:
     name: Run Vite ESLint Linting
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: ["16", "18"]
+      fail-fast: true
 
     steps:
       - name: Checkout repository
@@ -17,24 +24,12 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
         run: npm install
         working-directory: client
 
-      - name: Run ESLint via npm
-        run: npm run lint -- --format json --output-file eslint-report.json || true
+      - name: Run lint
+        run: npm run lint
         working-directory: client
-
-      - name: View ESLint output
-        run: cat client/eslint-report.json
-
-      - name: Report ESLint results via reviewdog
-        uses: reviewdog/action-eslint@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-pr-check
-          level: warning
-          eslint_flags: ". --format json --output-file eslint-report.json"
-          workdir: client
