@@ -13,6 +13,10 @@ on:
 env:
   GOLANGCI_LINT_VERSION: v1.60
 
+permissions:
+  checks: write
+  contents: write
+
 jobs:
   react-lint:
     name: React linting
@@ -32,6 +36,8 @@ jobs:
       - name: Install Node.js dependencies
         run: npm ci
         working-directory: client
+
+      - run: cd client
 
       - name: Run linters
         uses: wearerequired/lint-action@v2
