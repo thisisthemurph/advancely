@@ -43,4 +43,5 @@ jobs:
           eslint: true
         env:
           # Ensure the working directory is set
+          working-directory: client
           WORKING_DIRECTORY: client
