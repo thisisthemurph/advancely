@@ -18,6 +18,6 @@ jobs:
 
       - uses: reviewdog/action-eslint@v1
         with:
-          workdir: server
+          workdir: client
           eslint_flags: "src/"
           github_token: ${{ github.token }}
