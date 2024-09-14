@@ -37,9 +37,10 @@ jobs:
         run: npm ci
         working-directory: client
 
-      - run: cd client
-
       - name: Run linters
         uses: wearerequired/lint-action@v2
         with:
           eslint: true
+        env:
+          # Ensure the working directory is set
+          WORKING_DIRECTORY: client
