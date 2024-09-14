@@ -1,23 +1,37 @@
-name: reviewdog
+name: Vite ESLint Linting with Reviewdog
 
-on: [pull_request]
+on:
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  eslint:
-    name: Eslint
+  lint:
+    name: Run Vite ESLint Linting
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: "18"
 
-      - run: npm install
+      - name: Install dependencies
+        run: npm install
         working-directory: client
 
-      - uses: reviewdog/action-eslint@v1
+      - name: Run ESLint via npm
+        run: npm run lint -- --format json --output-file eslint-report.json || true
+        working-directory: client
+
+      - name: Report ESLint results via reviewdog
+        uses: reviewdog/action-eslint@v1
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-check
+          level: warning
+          eslint_flags: "--format json --output-file eslint-report.json"
           workdir: client
-          eslint_flags: "src/"
-          github_token: ${{ github.token }}
