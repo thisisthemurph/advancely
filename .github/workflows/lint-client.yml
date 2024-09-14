@@ -1,47 +1,22 @@
-name: React Lint
+name: reviewdog
 
-on:
-  pull_request:
-    paths:
-      - "client/**"
-  push:
-    branches:
-      - "main"
-    paths:
-      - "client/**"
-
-env:
-  GOLANGCI_LINT_VERSION: v1.60
-
-permissions:
-  checks: write
-  contents: write
+on: [pull_request]
 
 jobs:
-  react-lint:
-    name: React linting
+  eslint:
+    name: Eslint
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [16.x, 18.x]
-      fail-fast: true
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: "18"
 
-      - name: Install Node.js dependencies
-        run: npm ci
-        working-directory: client
+      - run: npm ci
 
-      - name: Run linters
-        uses: wearerequired/lint-action@v2
+      - uses: reviewdog/action-eslint@v1
         with:
-          eslint: true
-        env:
-          # Ensure the working directory is set
-          working-directory: client
-          WORKING_DIRECTORY: client
+          workdir: server
+          eslint_flags: "src/"
+          github_token: ${{ github.token }}
