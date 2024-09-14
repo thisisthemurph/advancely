@@ -1,4 +1,4 @@
-name: Vite ESLint Linting with Reviewdog
+name: Client Lint
 
 on:
   pull_request:
@@ -9,12 +9,12 @@ on:
 
 jobs:
   lint:
-    name: Run Vite ESLint Linting
+    name: Run Vite ESLint
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: ["16", "18"]
+        node-version: ["18"]
       fail-fast: true
 
     steps:
