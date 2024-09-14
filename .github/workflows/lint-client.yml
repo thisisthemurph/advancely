@@ -27,11 +27,14 @@ jobs:
         run: npm run lint -- --format json --output-file eslint-report.json || true
         working-directory: client
 
+      - name: View ESLint output
+        run: cat client/eslint-report.json
+
       - name: Report ESLint results via reviewdog
         uses: reviewdog/action-eslint@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-check
           level: warning
-          eslint_flags: "--format json --output-file eslint-report.json"
+          eslint_flags: ". --format json --output-file eslint-report.json"
           workdir: client
