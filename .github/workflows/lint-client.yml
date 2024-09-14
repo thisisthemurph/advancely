@@ -1,0 +1,35 @@
+name: Client Lint
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "client/**"
+
+jobs:
+  lint:
+    name: Run Vite ESLint
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: ["18"]
+      fail-fast: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: client
+
+      - name: Run lint
+        run: npm run lint
+        working-directory: client

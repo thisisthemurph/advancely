@@ -1,5 +1,5 @@
 import { VariantProps } from "class-variance-authority";
-import { buttonVariants } from "./button";
+import { buttonVariants } from "./variants/button.ts"
 
 import { cn } from "./lib/utils";
 import { Link, LinkProps } from "react-router-dom";

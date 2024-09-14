@@ -17,13 +17,15 @@ interface TokenData {
 }
 
 function ConfirmEmailPage() {
-  const auth = useAuth();
+  const { emailConfirmed } = useAuth();
   const navigate = useNavigate();
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [error, setError] = useState<PageError>({
     code: "",
     message: "",
   });
+
+
 
   useEffect(() => {
     if (!window.location.hash) {
@@ -79,7 +81,7 @@ function ConfirmEmailPage() {
       return;
     }
 
-    auth.emailConfirmed({ token: accessToken }).then(() => {
+    emailConfirmed({ token: accessToken }).then(() => {
       navigate("/login");
     }).catch(() => {
       setError({
@@ -87,7 +89,7 @@ function ConfirmEmailPage() {
         message: "We were not able to verify that your email address has been verified, please try logging in or requesting a new verification email if you cannot.",
       });
     });
-  }, [tokenData, navigate]);
+  }, [emailConfirmed, tokenData, navigate]);
 
   if (error.message) {
     return (
