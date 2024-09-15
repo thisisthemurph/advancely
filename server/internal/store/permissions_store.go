@@ -138,6 +138,54 @@ func (s *PermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithPermissio
 	return roles, nil
 }
 
+func (s *PermissionsStore) UserRoles(userID uuid.UUID) (model.UserRoleCollection, error) {
+	collection := model.UserRoleCollection{
+		UserID: userID,
+		Roles:  []model.UserRole{},
+	}
+
+	stmt := `
+		select
+		    r.id as role_id, r.name as role_name,
+		    p.id as permission_id, p.name as permission_name
+		from security.user_roles ur
+		join auth.users u on u.id = ur.user_id
+		join security.roles r on r.id = ur.role_id
+		join security.role_permissions rp on rp.role_id = r.id
+		join security.permissions p on p.id = rp.permission_id
+		where u.id = $1;`
+
+	var results []struct {
+		RoleID         int    `db:"role_id"`
+		RoleName       string `db:"role_name"`
+		PermissionID   int    `db:"permission_id"`
+		PermissionName string `db:"permission_name"`
+	}
+	if err := s.Select(&results, stmt, userID); err != nil {
+		return collection, err
+	}
+
+	roleMap := make(map[int]*model.UserRole)
+	for _, res := range results {
+		role, exists := roleMap[res.RoleID]
+		if !exists {
+			role = &model.UserRole{
+				Name:        res.RoleName,
+				Permissions: []string{},
+			}
+		}
+
+		role.Permissions = append(role.Permissions, res.PermissionName)
+		roleMap[res.RoleID] = role
+	}
+
+	for _, role := range roleMap {
+		collection.Roles = append(collection.Roles, *role)
+	}
+
+	return collection, nil
+}
+
 func (s *PermissionsStore) CreateRole(r model.CreateRole) (model.Role, error) {
 	stmt := `
 		insert into security.roles (company_id, name, description)

@@ -53,7 +53,7 @@ func (h AuthHandler) MakeRoutes(e *echo.Group) {
 func (h AuthHandler) handleLogout() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		user := auth.Session(c)
+		user := auth.CurrentUser(c)
 		if err := h.Supabase.Auth.SignOut(ctx, user.AccessToken); err != nil {
 			h.Logger.Error("Error logging out", "error", err)
 		}

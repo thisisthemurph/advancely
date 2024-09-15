@@ -41,3 +41,29 @@ type RoleWithPermissions struct {
 	Role
 	Permissions []Permission `json:"permissions"`
 }
+
+type UserRole struct {
+	Name        string
+	Permissions []string
+}
+
+type UserRoleCollection struct {
+	UserID uuid.UUID
+	Roles  []UserRole
+}
+
+// HasPermission returns true if the permission is present, otherwise false.
+// Always returns true if the user has the Admin role.
+func (urc UserRoleCollection) HasPermission(name string) bool {
+	for _, r := range urc.Roles {
+		if r.Name == "Admin" {
+			return true
+		}
+		for _, p := range r.Permissions {
+			if p == name {
+				return true
+			}
+		}
+	}
+	return false
+}

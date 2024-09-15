@@ -57,7 +57,7 @@ func (h PermissionsHandler) MakeRoutes(e *echo.Group) {
 
 func (h PermissionsHandler) handleGetRoleWithPermissions() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		session := auth.Session(c)
+		session := auth.CurrentUser(c)
 		user, err := h.UserStore.User(session.ID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
@@ -82,7 +82,7 @@ func (h PermissionsHandler) handleGetRoleWithPermissions() echo.HandlerFunc {
 
 func (h PermissionsHandler) handleListRolesWithPermissions() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		session := auth.Session(c)
+		session := auth.CurrentUser(c)
 		user, err := h.UserStore.User(session.ID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
@@ -105,10 +105,14 @@ func (h PermissionsHandler) handleCreateRole() echo.HandlerFunc {
 	}
 
 	return func(c echo.Context) error {
-		session := auth.Session(c)
-		user, err := h.UserStore.User(session.ID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		session := auth.CurrentUser(c)
+
+		// Ensure the user has permissions to create roles
+
+		userRoles, err := h.PermissionsStore.UserRoles(session.User.ID)
+		hasPermission := userRoles.HasPermission("create-role")
+		if !hasPermission {
+			return echo.NewHTTPError(http.StatusUnauthorized, "You do not have permissions to create a new role")
 		}
 
 		// Get the role to create
@@ -119,7 +123,7 @@ func (h PermissionsHandler) handleCreateRole() echo.HandlerFunc {
 		}
 
 		role := model.CreateRole{
-			CompanyID:   user.CompanyID,
+			CompanyID:   session.User.Company.ID,
 			Name:        request.Name,
 			Description: request.Description,
 		}
@@ -141,7 +145,7 @@ func (h PermissionsHandler) handleUpdateRole() echo.HandlerFunc {
 	}
 
 	return func(c echo.Context) error {
-		s := auth.Session(c)
+		s := auth.CurrentUser(c)
 		user, err := h.UserStore.User(s.ID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
@@ -187,7 +191,7 @@ func (h PermissionsHandler) handleUpdateRole() echo.HandlerFunc {
 
 func (h PermissionsHandler) handleDeleteRole() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		session := auth.Session(c)
+		session := auth.CurrentUser(c)
 		user, err := h.UserStore.User(session.ID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
@@ -212,7 +216,7 @@ func (h PermissionsHandler) handleDeleteRole() echo.HandlerFunc {
 
 func (h PermissionsHandler) handleAssignPermissionToRole() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		s := auth.Session(c)
+		s := auth.CurrentUser(c)
 		user, err := h.UserStore.User(s.ID)
 		if err != nil {
 			h.Logger.Error("error fetching user", "error", err)
@@ -238,7 +242,7 @@ func (h PermissionsHandler) handleAssignPermissionToRole() echo.HandlerFunc {
 
 func (h PermissionsHandler) handleRemovePermissionFromRole() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		s := auth.Session(c)
+		s := auth.CurrentUser(c)
 		user, err := h.UserStore.User(s.ID)
 		if err != nil {
 			h.Logger.Error("error fetching user", "error", err)
@@ -264,7 +268,7 @@ func (h PermissionsHandler) handleRemovePermissionFromRole() echo.HandlerFunc {
 
 func (h PermissionsHandler) handleAssignRoleToUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		s := auth.Session(c)
+		s := auth.CurrentUser(c)
 		user, err := h.UserStore.User(s.ID)
 		if err != nil {
 			h.Logger.Error("error fetching user", "error", err)
@@ -294,7 +298,7 @@ func (h PermissionsHandler) handleAssignRoleToUser() echo.HandlerFunc {
 
 func (h PermissionsHandler) handleRemoveRoleFromUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		s := auth.Session(c)
+		s := auth.CurrentUser(c)
 		user, err := h.UserStore.User(s.ID)
 		if err != nil {
 			h.Logger.Error("error fetching user", "error", err)

@@ -59,4 +59,6 @@ type PermissionsStore interface {
 	AssignSystemRoleToUser(role model.SystemRole, userID, companyID uuid.UUID) error
 	// RemoveRoleFromUser disassociates the given role from the user.
 	RemoveRoleFromUser(roleID int, userID, companyID uuid.UUID) error
+	// UserRoles gets the roles and permissions associated with the given user.
+	UserRoles(userID uuid.UUID) (model.UserRoleCollection, error)
 }
