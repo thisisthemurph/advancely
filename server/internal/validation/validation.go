@@ -20,7 +20,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 
 // BindAndValidate attempts to bind the form to the given struct and validates the result.
 // Returns an HTTP error if binding or validation fails.
-func BindAndValidate(c echo.Context, i interface{}) error {
+func BindAndValidate(c echo.Context, i interface{}) *echo.HTTPError {
 	if err := c.Bind(i); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest)
 	}
