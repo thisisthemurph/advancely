@@ -1,4 +1,4 @@
-package store
+package errs
 
 import (
 	"errors"
@@ -52,7 +52,9 @@ func stringToPgErr(code string) (PgErr, bool) {
 	}
 }
 
-func checkPgErr(err error) PgErr {
+// CheckPgErr returns a valid PgErr if the provided error is a known *pq.Error.
+// If the error is not a known *pq.Error, it returns a PgErrNone.
+func CheckPgErr(err error) PgErr {
 	var pqErr *pq.Error
 	if !errors.As(err, &pqErr) {
 		return PgErrNone

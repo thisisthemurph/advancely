@@ -1,10 +1,12 @@
 package store
 
 import (
-	"advancely/internal/model"
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"advancely/internal/model"
+	"advancely/pkg/errs"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -295,7 +297,7 @@ func (s *PostgresPermissionsStore) AssignPermissionToRole(roleID, permissionID i
 	stmt := "insert into security.role_permissions (role_id, permission_id) values ($1, $2)"
 	if _, err := s.Exec(stmt, roleID, permissionID); err != nil {
 		// Check for unique_violation error, the relationship already exists.
-		if pge := checkPgErr(err); errors.Is(pge, PgErrCodeUniqueViolation) {
+		if pge := errs.CheckPgErr(err); errors.Is(pge, errs.PgErrCodeUniqueViolation) {
 			return nil
 		}
 		return fmt.Errorf("failed to insert role permission: %w", err)
@@ -329,7 +331,7 @@ func (s *PostgresPermissionsStore) AssignRoleToUser(roleID int, userID, companyI
 	stmt := "insert into security.user_roles (user_id, role_id) values ($1, $2);"
 	if _, err := s.Exec(stmt, userID, roleID); err != nil {
 		// Check for postgres unique_violation, relationship already exists
-		if pgErr := checkPgErr(err); errors.Is(pgErr, PgErrCodeUniqueViolation) {
+		if pgErr := errs.CheckPgErr(err); errors.Is(pgErr, errs.PgErrCodeUniqueViolation) {
 			return nil
 		}
 		return fmt.Errorf("failed to insert user role: %w", err)
