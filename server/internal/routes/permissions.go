@@ -38,6 +38,12 @@ type PermissionsHandler struct {
 	Logger           *slog.Logger
 }
 
+// EnsurePermission returns an echo.HTTPError if the permission does not exist for the
+// current authenticated session user.
+func (h PermissionsHandler) EnsurePermission(c echo.Context, permission security.Permission) *echo.HTTPError {
+	return EnsurePermission(c, h.PermissionsStore, permission)
+}
+
 func (h PermissionsHandler) MakeRoutes(e *echo.Group) {
 	group := e.Group("/auth/permissions")
 
@@ -60,23 +66,18 @@ func (h PermissionsHandler) MakeRoutes(e *echo.Group) {
 func (h PermissionsHandler) handleGetRoleWithPermissions() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		session := auth.CurrentUser(c)
-		user, err := h.UserStore.User(session.ID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-		}
 
 		roleId, err := strconv.Atoi(c.Param("roleId"))
 		if err != nil {
-			return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, "Role ID could not be parsed")
 		}
 
-		// Get the role
-		role, err := h.PermissionsStore.Role(roleId, &user.CompanyID)
+		role, err := h.PermissionsStore.Role(roleId, &session.User.Company.ID)
 		if err != nil {
 			if errors.Is(err, store.ErrRoleNotFound) {
 				return echo.NewHTTPError(http.StatusNotFound, err.Error())
 			}
-			return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 		return c.JSON(http.StatusOK, role)
 	}
@@ -85,16 +86,10 @@ func (h PermissionsHandler) handleGetRoleWithPermissions() echo.HandlerFunc {
 func (h PermissionsHandler) handleListRolesWithPermissions() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		session := auth.CurrentUser(c)
-		user, err := h.UserStore.User(session.ID)
+		roles, err := h.PermissionsStore.Roles(session.User.Company.ID)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-		}
-
-		roles, err := h.PermissionsStore.Roles(user.CompanyID)
-		if err != nil {
-			if errors.Is(err, store.ErrRoleNotFound) {
-				return echo.NewHTTPError(http.StatusNotFound, err.Error())
-			}
+			h.Logger.Error("failed to list roles", "error", err)
+			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 		return c.JSON(http.StatusOK, roles)
 	}
@@ -108,15 +103,8 @@ func (h PermissionsHandler) handleCreateRole() echo.HandlerFunc {
 
 	return func(c echo.Context) error {
 		session := auth.CurrentUser(c)
-
-		// Ensure the user has permissions to create roles
-
-		userRoles, err := h.PermissionsStore.UserRoles(session.User.ID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError)
-		}
-		if hasPermission := userRoles.HasPermission(security.PermissionCreateRole); !hasPermission {
-			return echo.NewHTTPError(http.StatusUnauthorized, "You do not have permissions to create a new role")
+		if err := h.EnsurePermission(c, security.PermissionCreateRole); err != nil {
+			return err
 		}
 
 		// Get the role to create
@@ -136,7 +124,7 @@ func (h PermissionsHandler) handleCreateRole() echo.HandlerFunc {
 
 		createdRole, err := h.PermissionsStore.CreateRole(role)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 		return c.JSON(http.StatusCreated, createdRole)
 	}
@@ -149,24 +137,23 @@ func (h PermissionsHandler) handleUpdateRole() echo.HandlerFunc {
 	}
 
 	return func(c echo.Context) error {
-		s := auth.CurrentUser(c)
-		user, err := h.UserStore.User(s.ID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		session := auth.CurrentUser(c)
+		if err := h.EnsurePermission(c, security.PermissionEditRole); err != nil {
+			return err
 		}
 
 		roleId, err := strconv.Atoi(c.Param("roleId"))
 		if err != nil {
 			h.Logger.Error("error parsing roleId param", "error", err)
-			return echo.NewHTTPError(400, "could not determine the role ID")
+			return echo.NewHTTPError(http.StatusBadRequest, "could not determine the role ID")
 		}
 
-		role, err := h.PermissionsStore.Role(roleId, &user.CompanyID)
+		role, err := h.PermissionsStore.Role(roleId, &session.User.Company.ID)
 		if err != nil {
 			if errors.Is(err, store.ErrRoleNotFound) {
 				return echo.NewHTTPError(http.StatusNotFound, err.Error())
 			}
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 
 		if role.IsSystemRole {
@@ -187,7 +174,7 @@ func (h PermissionsHandler) handleUpdateRole() echo.HandlerFunc {
 		}
 
 		if err := h.PermissionsStore.UpdateRole(&update); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 		return c.NoContent(http.StatusNoContent)
 	}
@@ -196,9 +183,8 @@ func (h PermissionsHandler) handleUpdateRole() echo.HandlerFunc {
 func (h PermissionsHandler) handleDeleteRole() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		session := auth.CurrentUser(c)
-		user, err := h.UserStore.User(session.ID)
-		if err != nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		if err := h.EnsurePermission(c, security.PermissionDeleteRole); err != nil {
+			return err
 		}
 
 		roleIdParam := c.Param("roleId")
@@ -211,8 +197,8 @@ func (h PermissionsHandler) handleDeleteRole() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "role id is invalid")
 		}
 
-		if err := h.PermissionsStore.DeleteRole(roleId, user.CompanyID); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		if err := h.PermissionsStore.DeleteRole(roleId, session.User.Company.ID); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 		return c.NoContent(http.StatusNoContent)
 	}
@@ -220,11 +206,9 @@ func (h PermissionsHandler) handleDeleteRole() echo.HandlerFunc {
 
 func (h PermissionsHandler) handleAssignPermissionToRole() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		s := auth.CurrentUser(c)
-		user, err := h.UserStore.User(s.ID)
-		if err != nil {
-			h.Logger.Error("error fetching user", "error", err)
-			return echo.NewHTTPError(http.StatusUnauthorized)
+		session := auth.CurrentUser(c)
+		if err := h.EnsurePermission(c, security.PermissionEditRole); err != nil {
+			return err
 		}
 
 		roleID, ridErr := strconv.Atoi(c.Param("roleId"))
@@ -233,9 +217,12 @@ func (h PermissionsHandler) handleAssignPermissionToRole() echo.HandlerFunc {
 			return echo.NewHTTPError(400, "role or permission ID not valid")
 		}
 
-		if err := h.PermissionsStore.AssignPermissionToRole(roleID, permissionId, user.CompanyID); err != nil {
-			if errs.IsOne(err, store.ErrRoleNotFound, store.ErrPermissionNotFount, store.ErrCannotUpdateSystemRole) {
+		if err := h.PermissionsStore.AssignPermissionToRole(roleID, permissionId, session.User.Company.ID); err != nil {
+			if errors.Is(err, store.ErrCannotUpdateSystemRole) {
 				return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+			}
+			if errs.IsOne(err, store.ErrRoleNotFound, store.ErrPermissionNotFount) {
+				return echo.NewHTTPError(http.StatusNotFound, err.Error())
 			}
 			h.Logger.Error("error assigning permission to role", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
@@ -246,11 +233,9 @@ func (h PermissionsHandler) handleAssignPermissionToRole() echo.HandlerFunc {
 
 func (h PermissionsHandler) handleRemovePermissionFromRole() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		s := auth.CurrentUser(c)
-		user, err := h.UserStore.User(s.ID)
-		if err != nil {
-			h.Logger.Error("error fetching user", "error", err)
-			return echo.NewHTTPError(http.StatusUnauthorized)
+		session := auth.CurrentUser(c)
+		if err := h.EnsurePermission(c, security.PermissionEditRole); err != nil {
+			return err
 		}
 
 		roleID, ridErr := strconv.Atoi(c.Param("roleId"))
@@ -259,9 +244,12 @@ func (h PermissionsHandler) handleRemovePermissionFromRole() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "role or permission ID not valid")
 		}
 
-		if err := h.PermissionsStore.RemovePermissionFromRole(roleID, permissionId, user.CompanyID); err != nil {
-			if errs.IsOne(err, store.ErrCannotUpdateSystemRole, store.ErrPermissionNotFount, store.ErrCannotUpdateSystemRole) {
-				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		if err := h.PermissionsStore.RemovePermissionFromRole(roleID, permissionId, session.User.Company.ID); err != nil {
+			if errors.Is(err, store.ErrRoleNotFound) {
+				return echo.NewHTTPError(http.StatusNotFound, err.Error())
+			}
+			if errs.IsOne(err, store.ErrCannotUpdateSystemRole, store.ErrCannotUpdateSystemRole) {
+				return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 			}
 			h.Logger.Error("error removing permission from role", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
@@ -272,11 +260,9 @@ func (h PermissionsHandler) handleRemovePermissionFromRole() echo.HandlerFunc {
 
 func (h PermissionsHandler) handleAssignRoleToUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		s := auth.CurrentUser(c)
-		user, err := h.UserStore.User(s.ID)
-		if err != nil {
-			h.Logger.Error("error fetching user", "error", err)
-			return echo.NewHTTPError(http.StatusUnauthorized)
+		session := auth.CurrentUser(c)
+		if err := h.EnsurePermission(c, security.PermissionAssignUserRole); err != nil {
+			return err
 		}
 
 		roleID, err := strconv.Atoi(c.Param("roleId"))
@@ -289,7 +275,7 @@ func (h PermissionsHandler) handleAssignRoleToUser() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "user ID not valid")
 		}
 
-		if err := h.PermissionsStore.AssignRoleToUser(roleID, userID, user.CompanyID); err != nil {
+		if err := h.PermissionsStore.AssignRoleToUser(roleID, userID, session.User.Company.ID); err != nil {
 			if errors.Is(err, store.ErrRoleNotFound) {
 				return echo.NewHTTPError(http.StatusNotFound, err.Error())
 			}
@@ -302,11 +288,9 @@ func (h PermissionsHandler) handleAssignRoleToUser() echo.HandlerFunc {
 
 func (h PermissionsHandler) handleRemoveRoleFromUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		s := auth.CurrentUser(c)
-		user, err := h.UserStore.User(s.ID)
-		if err != nil {
-			h.Logger.Error("error fetching user", "error", err)
-			return echo.NewHTTPError(http.StatusUnauthorized)
+		session := auth.CurrentUser(c)
+		if err := h.EnsurePermission(c, security.PermissionRemoveUserRole); err != nil {
+			return err
 		}
 
 		roleID, err := strconv.Atoi(c.Param("roleId"))
@@ -319,7 +303,7 @@ func (h PermissionsHandler) handleRemoveRoleFromUser() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "user ID not valid")
 		}
 
-		if err := h.PermissionsStore.RemoveRoleFromUser(roleID, userID, user.CompanyID); err != nil {
+		if err := h.PermissionsStore.RemoveRoleFromUser(roleID, userID, session.User.Company.ID); err != nil {
 			h.Logger.Error("error removing role from user", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
