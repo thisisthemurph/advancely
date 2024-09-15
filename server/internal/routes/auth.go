@@ -1,30 +1,33 @@
 package routes
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+
 	"advancely/internal/application"
 	"advancely/internal/auth"
 	"advancely/internal/model"
 	"advancely/internal/model/security"
 	"advancely/internal/store"
 	"advancely/internal/validation"
-	"context"
-	"errors"
-	"fmt"
+	"advancely/pkg/sbext"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/nedpals/supabase-go"
-	"log/slog"
-	"net/http"
 )
 
 func NewAuthHandler(
-	sb *supabase.Client,
+	supabaseClient *supabase.Client,
 	s *store.PostgresStore,
 	config application.AppConfig,
 	logger *slog.Logger,
 ) AuthHandler {
 	return AuthHandler{
-		Supabase:         sb,
+		Supabase:         sbext.NewSupabaseExtended(supabaseClient, config.Supabase, config.ClientBaseURL),
 		UserStore:        s.UserStore,
 		CompanyStore:     s.CompanyStore,
 		PermissionsStore: s.PermissionsStore,
@@ -34,7 +37,7 @@ func NewAuthHandler(
 }
 
 type AuthHandler struct {
-	Supabase         *supabase.Client
+	Supabase         *sbext.SupabaseExtended
 	UserStore        store.UserStore
 	CompanyStore     store.CompanyStore
 	PermissionsStore store.PermissionsStore
@@ -48,6 +51,8 @@ func (h AuthHandler) MakeRoutes(e *echo.Group) {
 	group.POST("/signup", h.handleSignup())
 	group.POST("/logout", h.handleLogout())
 	group.POST("/confirm-email", h.handleVerifyEmailVerificationComplete())
+	group.POST("/reset-password", h.handleTriggerPasswordReset())
+	group.POST("/reset-password/confirm", h.handleConfirmPasswordReset())
 }
 
 func (h AuthHandler) handleLogout() echo.HandlerFunc {
@@ -268,6 +273,74 @@ func (h AuthHandler) handleVerifyEmailVerificationComplete() echo.HandlerFunc {
 		if user.ConfirmedAt.IsZero() {
 			return c.NoContent(http.StatusUnauthorized)
 		}
+		return c.NoContent(http.StatusNoContent)
+	}
+}
+
+func (h AuthHandler) handleTriggerPasswordReset() echo.HandlerFunc {
+	type request struct {
+		Email string `json:"email" validate:"required,email"`
+	}
+
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		var req request
+		if err := validation.BindAndValidate(c, &req); err != nil {
+			return err
+		}
+
+		if err := h.Supabase.Extensions.ResetPasswordForEmail(ctx, req.Email, "/auth/password-reset"); err != nil {
+			h.Logger.Error("failed to trigger password reset", "error", err)
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+		return c.NoContent(http.StatusNoContent)
+	}
+}
+
+func (h AuthHandler) handleConfirmPasswordReset() echo.HandlerFunc {
+	type request struct {
+		OTP         string `json:"otp"`
+		Email       string `json:"email"`
+		NewPassword string `json:"password"`
+	}
+
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+
+		var req request
+		if err := validation.BindAndValidate(c, &req); err != nil {
+			return err
+		}
+
+		ad, err := h.Supabase.Extensions.VerifyOTPForEmail(ctx, req.Email, req.OTP)
+		if err != nil {
+			var sbErr *sbext.Error
+			if errors.As(err, &sbErr) {
+				if sbErr.ErrorCode == sbext.SupabaseErrorCodeOTPExpired {
+					return echo.NewHTTPError(http.StatusUnauthorized, "OTP is invalid or has expired")
+				}
+			}
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+		if ad == nil {
+			return echo.NewHTTPError(http.StatusUnauthorized)
+		}
+
+		cookie := auth.NewSessionCookie(ad)
+		if err := cookie.SetCookie(c, h.Config.SessionSecret, h.Config.Environment); err != nil {
+			h.Logger.Error("failed to set session cookie", "error", err)
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+
+		_, err = h.Supabase.Auth.UpdateUser(ctx, ad.AccessToken, map[string]interface{}{
+			"password": req.NewPassword,
+		})
+		if err != nil {
+			h.Logger.Error("failed to update user password", "error", err)
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+
 		return c.NoContent(http.StatusNoContent)
 	}
 }
