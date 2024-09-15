@@ -63,7 +63,14 @@ type CompanyStore interface {
 	DeleteCompany(id uuid.UUID) error
 }
 
+type RoleFetcher interface {
+	// UserRoles gets the roles and permissions associated with the given user.
+	UserRoles(userID uuid.UUID) (security.UserRoleCollection, error)
+}
+
 type PermissionsStore interface {
+	RoleFetcher
+
 	// Role returns the role associated with the given ID
 	// Passing nil for the companyID will allow searching for matching system roles
 	Role(id int, companyID *uuid.UUID) (model.RoleWithPermissions, error)
@@ -86,6 +93,4 @@ type PermissionsStore interface {
 	AssignSystemRoleToUser(role security.Role, userID, companyID uuid.UUID) error
 	// RemoveRoleFromUser disassociates the given role from the user.
 	RemoveRoleFromUser(roleID int, userID, companyID uuid.UUID) error
-	// UserRoles gets the roles and permissions associated with the given user.
-	UserRoles(userID uuid.UUID) (security.UserRoleCollection, error)
 }
