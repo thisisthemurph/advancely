@@ -24,12 +24,14 @@ type CreateRole struct {
 	Description string    `json:"description"`
 }
 
+// PermissionGroup represents the security.permission_groups table.
 type PermissionGroup struct {
 	ID          int    `db:"id" json:"id"`
 	Name        string `db:"name" json:"name"`
 	Description string `db:"description" json:"description"`
 }
 
+// Permission represents the security.permissions table.
 type Permission struct {
 	ID          int             `db:"id" json:"id"`
 	Name        string          `db:"name" json:"name"`
@@ -37,25 +39,28 @@ type Permission struct {
 	Group       PermissionGroup `json:"group"`
 }
 
+// RoleWithPermissions represents the join between the security.roles and security.permissions table.
 type RoleWithPermissions struct {
 	Role
 	Permissions []Permission `json:"permissions"`
 }
 
+// UserRole is used to describe a role, including permissions on the role for a single user.
 type UserRole struct {
 	Name        string
 	Permissions []string
 }
 
+// UserRoleCollection is a collection of UserRole objects for a specific user.
 type UserRoleCollection struct {
 	UserID uuid.UUID
 	Roles  []UserRole
 }
 
-// HasPermission returns true if the permission is present, otherwise false.
-// Always returns true if the user has the Admin role.
-func (urc UserRoleCollection) HasPermission(name string) bool {
-	for _, r := range urc.Roles {
+// HasPermission returns true if the permission is present on any role, otherwise false.
+// The function always returns true if the user has the Admin role.
+func (collection UserRoleCollection) HasPermission(name string) bool {
+	for _, r := range collection.Roles {
 		if r.Name == "Admin" {
 			return true
 		}
