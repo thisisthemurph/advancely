@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"advancely/internal/model"
+	"advancely/internal/model/security"
 	"advancely/pkg/errs"
 
 	"github.com/google/uuid"
@@ -140,10 +141,10 @@ func (s *PostgresPermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithP
 	return roles, nil
 }
 
-func (s *PostgresPermissionsStore) UserRoles(userID uuid.UUID) (model.UserRoleCollection, error) {
-	collection := model.UserRoleCollection{
+func (s *PostgresPermissionsStore) UserRoles(userID uuid.UUID) (security.UserRoleCollection, error) {
+	collection := security.UserRoleCollection{
 		UserID: userID,
-		Roles:  []model.UserRole{},
+		Roles:  []security.UserRole{},
 	}
 
 	stmt := `
@@ -167,17 +168,17 @@ func (s *PostgresPermissionsStore) UserRoles(userID uuid.UUID) (model.UserRoleCo
 		return collection, err
 	}
 
-	roleMap := make(map[int]*model.UserRole)
+	roleMap := make(map[int]*security.UserRole)
 	for _, res := range results {
 		role, exists := roleMap[res.RoleID]
 		if !exists {
-			role = &model.UserRole{
-				Name:        res.RoleName,
-				Permissions: []string{},
+			role = &security.UserRole{
+				Role:        security.Role(res.RoleName),
+				Permissions: []security.Permission{},
 			}
 		}
 
-		role.Permissions = append(role.Permissions, res.PermissionName)
+		role.Permissions = append(role.Permissions, security.Permission(res.PermissionName))
 		roleMap[res.RoleID] = role
 	}
 
@@ -339,7 +340,7 @@ func (s *PostgresPermissionsStore) AssignRoleToUser(roleID int, userID, companyI
 	return nil
 }
 
-func (s *PostgresPermissionsStore) AssignSystemRoleToUser(role model.SystemRole, userID, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) AssignSystemRoleToUser(role security.Role, userID, companyID uuid.UUID) error {
 	var roleId int
 	stmt := "select id from security.roles where name = $1 and is_system_role = true;"
 	if err := s.Get(&roleId, stmt, role); err != nil {

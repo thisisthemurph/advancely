@@ -1,12 +1,6 @@
 package model
 
-import (
-	"github.com/google/uuid"
-)
-
-type SystemRole string
-
-const SystemRoleAdmin SystemRole = "Admin"
+import "github.com/google/uuid"
 
 // Role represents the security.roles table.
 type Role struct {
@@ -43,32 +37,4 @@ type Permission struct {
 type RoleWithPermissions struct {
 	Role
 	Permissions []Permission `json:"permissions"`
-}
-
-// UserRole is used to describe a role, including permissions on the role for a single user.
-type UserRole struct {
-	Name        string
-	Permissions []string
-}
-
-// UserRoleCollection is a collection of UserRole objects for a specific user.
-type UserRoleCollection struct {
-	UserID uuid.UUID
-	Roles  []UserRole
-}
-
-// HasPermission returns true if the permission is present on any role, otherwise false.
-// The function always returns true if the user has the Admin role.
-func (collection UserRoleCollection) HasPermission(name string) bool {
-	for _, r := range collection.Roles {
-		if r.Name == "Admin" {
-			return true
-		}
-		for _, p := range r.Permissions {
-			if p == name {
-				return true
-			}
-		}
-	}
-	return false
 }

@@ -1,18 +1,21 @@
 package routes
 
 import (
-	"advancely/internal/application"
-	"advancely/internal/auth"
-	"advancely/internal/model"
-	"advancely/internal/store"
-	"advancely/internal/validation"
-	"advancely/pkg/errs"
 	"errors"
-	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"advancely/internal/application"
+	"advancely/internal/auth"
+	"advancely/internal/model"
+	"advancely/internal/model/security"
+	"advancely/internal/store"
+	"advancely/internal/validation"
+	"advancely/pkg/errs"
+
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 )
 
 func NewPermissionsHandler(
@@ -109,8 +112,10 @@ func (h PermissionsHandler) handleCreateRole() echo.HandlerFunc {
 		// Ensure the user has permissions to create roles
 
 		userRoles, err := h.PermissionsStore.UserRoles(session.User.ID)
-		hasPermission := userRoles.HasPermission("create-role")
-		if !hasPermission {
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+		if hasPermission := userRoles.HasPermission(security.PermissionCreateRole); !hasPermission {
 			return echo.NewHTTPError(http.StatusUnauthorized, "You do not have permissions to create a new role")
 		}
 
@@ -118,7 +123,7 @@ func (h PermissionsHandler) handleCreateRole() echo.HandlerFunc {
 
 		var request CreateRoleRequest
 		if err := validation.BindAndValidate(c, &request); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+			return err
 		}
 
 		role := model.CreateRole{

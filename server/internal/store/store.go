@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"advancely/internal/model"
+	"advancely/internal/model/security"
+
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -81,9 +83,9 @@ type PermissionsStore interface {
 	AssignRoleToUser(roleID int, userID, companyID uuid.UUID) error
 	// AssignSystemRoleToUser assigns the specified system role to a given user.
 	// A success is returned if the role already exists for the user.
-	AssignSystemRoleToUser(role model.SystemRole, userID, companyID uuid.UUID) error
+	AssignSystemRoleToUser(role security.Role, userID, companyID uuid.UUID) error
 	// RemoveRoleFromUser disassociates the given role from the user.
 	RemoveRoleFromUser(roleID int, userID, companyID uuid.UUID) error
 	// UserRoles gets the roles and permissions associated with the given user.
-	UserRoles(userID uuid.UUID) (model.UserRoleCollection, error)
+	UserRoles(userID uuid.UUID) (security.UserRoleCollection, error)
 }

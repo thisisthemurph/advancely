@@ -4,6 +4,7 @@ import (
 	"advancely/internal/application"
 	"advancely/internal/auth"
 	"advancely/internal/model"
+	"advancely/internal/model/security"
 	"advancely/internal/store"
 	"advancely/internal/validation"
 	"context"
@@ -228,7 +229,7 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 
 		// Assign the Admin role to the user
 
-		err = h.PermissionsStore.AssignSystemRoleToUser(model.SystemRoleAdmin, userID, company.ID)
+		err = h.PermissionsStore.AssignSystemRoleToUser(security.RoleAdmin, userID, company.ID)
 		if err != nil {
 			h.Logger.Error("failed to add admin role to user", "error", err)
 			return echo.NewHTTPError(500, "Failed to assign appropriate permissions to your user")
