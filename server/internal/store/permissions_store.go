@@ -100,7 +100,7 @@ func (s *PostgresPermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithP
 
 	var rpList []rolePermission
 	if err := s.Select(&rpList, stmt, companyID); err != nil {
-		return nil, fmt.Errorf("failed to list roles for company ID %v: %w", companyID, err)
+		return []model.RoleWithPermissions{}, fmt.Errorf("failed to list roles for company ID %v: %w", companyID, err)
 	}
 
 	if rpList == nil {
