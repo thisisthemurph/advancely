@@ -17,13 +17,13 @@ var (
 	ErrCannotUpdateSystemRole = errors.New("cannot update system role")
 )
 
-func NewPermissionsStore(db *sqlx.DB) *PermissionsStore {
-	return &PermissionsStore{
+func NewPostgresPermissionsStore(db *sqlx.DB) *PostgresPermissionsStore {
+	return &PostgresPermissionsStore{
 		DB: db,
 	}
 }
 
-type PermissionsStore struct {
+type PostgresPermissionsStore struct {
 	*sqlx.DB
 }
 
@@ -38,7 +38,7 @@ type rolePermission struct {
 	PermissionDesc sql.NullString `db:"permission_description"`
 }
 
-func (s *PermissionsStore) Role(id int, companyID *uuid.UUID) (model.RoleWithPermissions, error) {
+func (s *PostgresPermissionsStore) Role(id int, companyID *uuid.UUID) (model.RoleWithPermissions, error) {
 	stmt := `
 		select
 		  r.id, r.company_id, r.name, r.description, r.is_system_role,
@@ -84,7 +84,7 @@ func (s *PermissionsStore) Role(id int, companyID *uuid.UUID) (model.RoleWithPer
 	return role, nil
 }
 
-func (s *PermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithPermissions, error) {
+func (s *PostgresPermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithPermissions, error) {
 	stmt := `
 		select
 		  r.id, r.company_id, r.name, r.description, r.is_system_role,
@@ -138,7 +138,7 @@ func (s *PermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithPermissio
 	return roles, nil
 }
 
-func (s *PermissionsStore) UserRoles(userID uuid.UUID) (model.UserRoleCollection, error) {
+func (s *PostgresPermissionsStore) UserRoles(userID uuid.UUID) (model.UserRoleCollection, error) {
 	collection := model.UserRoleCollection{
 		UserID: userID,
 		Roles:  []model.UserRole{},
@@ -186,7 +186,7 @@ func (s *PermissionsStore) UserRoles(userID uuid.UUID) (model.UserRoleCollection
 	return collection, nil
 }
 
-func (s *PermissionsStore) CreateRole(r model.CreateRole) (model.Role, error) {
+func (s *PostgresPermissionsStore) CreateRole(r model.CreateRole) (model.Role, error) {
 	stmt := `
 		insert into security.roles (company_id, name, description)
 		values ($1, $2, $3)
@@ -200,7 +200,7 @@ func (s *PermissionsStore) CreateRole(r model.CreateRole) (model.Role, error) {
 	return createdRole, nil
 }
 
-func (s *PermissionsStore) UpdateRole(r *model.Role) error {
+func (s *PostgresPermissionsStore) UpdateRole(r *model.Role) error {
 	role, err := s.Role(r.ID, r.CompanyID)
 	if err != nil {
 		return fmt.Errorf("failed to find role with ID %d: %w", r.ID, err)
@@ -223,7 +223,7 @@ func (s *PermissionsStore) UpdateRole(r *model.Role) error {
 	return nil
 }
 
-func (s *PermissionsStore) DeleteRole(id int, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) DeleteRole(id int, companyID uuid.UUID) error {
 	role, err := s.Role(id, &companyID)
 	if err != nil {
 		return fmt.Errorf("failed to find role with ID %d: %w", id, err)
@@ -239,7 +239,7 @@ func (s *PermissionsStore) DeleteRole(id int, companyID uuid.UUID) error {
 	return nil
 }
 
-func (s *PermissionsStore) Permission(id int) (model.Permission, error) {
+func (s *PostgresPermissionsStore) Permission(id int) (model.Permission, error) {
 	stmt := `
 		select p.id, p.name, p.description,
 		       g.id as group_id,
@@ -279,7 +279,7 @@ func (s *PermissionsStore) Permission(id int) (model.Permission, error) {
 	return permission, nil
 }
 
-func (s *PermissionsStore) AssignPermissionToRole(roleID, permissionID int, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) AssignPermissionToRole(roleID, permissionID int, companyID uuid.UUID) error {
 	role, err := s.Role(roleID, &companyID)
 	if err != nil {
 		return err
@@ -304,7 +304,7 @@ func (s *PermissionsStore) AssignPermissionToRole(roleID, permissionID int, comp
 	return nil
 }
 
-func (s *PermissionsStore) RemovePermissionFromRole(roleID, permissionID int, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) RemovePermissionFromRole(roleID, permissionID int, companyID uuid.UUID) error {
 	role, err := s.Role(roleID, &companyID)
 	if err != nil {
 		return err
@@ -320,7 +320,7 @@ func (s *PermissionsStore) RemovePermissionFromRole(roleID, permissionID int, co
 	return nil
 }
 
-func (s *PermissionsStore) AssignRoleToUser(roleID int, userID, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) AssignRoleToUser(roleID int, userID, companyID uuid.UUID) error {
 	_, err := s.Role(roleID, &companyID)
 	if err != nil {
 		return err
@@ -337,7 +337,7 @@ func (s *PermissionsStore) AssignRoleToUser(roleID int, userID, companyID uuid.U
 	return nil
 }
 
-func (s *PermissionsStore) AssignSystemRoleToUser(role model.SystemRole, userID, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) AssignSystemRoleToUser(role model.SystemRole, userID, companyID uuid.UUID) error {
 	var roleId int
 	stmt := "select id from security.roles where name = $1 and is_system_role = true;"
 	if err := s.Get(&roleId, stmt, role); err != nil {
@@ -346,7 +346,7 @@ func (s *PermissionsStore) AssignSystemRoleToUser(role model.SystemRole, userID,
 	return s.AssignRoleToUser(roleId, userID, companyID)
 }
 
-func (s *PermissionsStore) RemoveRoleFromUser(roleID int, userID, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) RemoveRoleFromUser(roleID int, userID, companyID uuid.UUID) error {
 	stmt := "delete from security.user_roles where user_id = $1 and role_id = $2;"
 	if _, err := s.Exec(stmt, userID, roleID); err != nil {
 		return fmt.Errorf("failed to delete user role: %w", err)

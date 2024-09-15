@@ -5,7 +5,6 @@ import (
 	"advancely/internal/auth"
 	"advancely/internal/model"
 	"advancely/internal/store"
-	"advancely/internal/store/contract"
 	"advancely/internal/validation"
 	"advancely/pkg/errs"
 	"errors"
@@ -17,7 +16,7 @@ import (
 )
 
 func NewPermissionsHandler(
-	s *store.Store,
+	s *store.PostgresStore,
 	config application.AppConfig,
 	logger *slog.Logger,
 ) PermissionsHandler {
@@ -30,8 +29,8 @@ func NewPermissionsHandler(
 }
 
 type PermissionsHandler struct {
-	UserStore        contract.UserStore
-	PermissionsStore contract.PermissionsStore
+	UserStore        store.UserStore
+	PermissionsStore store.PermissionsStore
 	Config           application.AppConfig
 	Logger           *slog.Logger
 }

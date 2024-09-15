@@ -5,7 +5,6 @@ import (
 	"advancely/internal/auth"
 	"advancely/internal/model"
 	"advancely/internal/store"
-	"advancely/internal/store/contract"
 	"advancely/internal/validation"
 	"context"
 	"errors"
@@ -19,7 +18,7 @@ import (
 
 func NewAuthHandler(
 	sb *supabase.Client,
-	s *store.Store,
+	s *store.PostgresStore,
 	config application.AppConfig,
 	logger *slog.Logger,
 ) AuthHandler {
@@ -35,9 +34,9 @@ func NewAuthHandler(
 
 type AuthHandler struct {
 	Supabase         *supabase.Client
-	UserStore        contract.UserStore
-	CompanyStore     contract.CompanyStore
-	PermissionsStore contract.PermissionsStore
+	UserStore        store.UserStore
+	CompanyStore     store.CompanyStore
+	PermissionsStore store.PermissionsStore
 	Config           application.AppConfig
 	Logger           *slog.Logger
 }

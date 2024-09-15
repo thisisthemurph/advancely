@@ -15,7 +15,7 @@ import (
 // App represents the configuration of the server application.
 type App struct {
 	Config   AppConfig
-	Store    *store.Store
+	Store    *store.PostgresStore
 	Supabase *supabase.Client
 	Logger   *slog.Logger
 }
@@ -62,7 +62,7 @@ func (app *App) createSupabaseClient() {
 // configureStores sets up the stores using the configured database URI.
 func (app *App) configureStores() error {
 	app.Logger.Info("connecting stores to the database")
-	s, err := store.NewStore(app.Config.Database.URI)
+	s, err := store.NewPostgresStore(app.Config.Database.URI)
 	if err != nil {
 		return err
 	}
