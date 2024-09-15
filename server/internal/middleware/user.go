@@ -3,7 +3,7 @@ package middleware
 import (
 	"advancely/internal/application"
 	"advancely/internal/auth"
-	"advancely/internal/store/contract"
+	"advancely/internal/store"
 	"context"
 	"errors"
 	"fmt"
@@ -19,7 +19,7 @@ var (
 
 type UserMiddleware struct {
 	*supabase.Client
-	UserStore contract.UserStore
+	UserStore store.UserStore
 	Config    application.AppConfig
 	Logger    *slog.Logger
 }
@@ -27,7 +27,7 @@ type UserMiddleware struct {
 func NewUserMiddleware(
 	config application.AppConfig,
 	client *supabase.Client,
-	userStore contract.UserStore,
+	userStore store.UserStore,
 	logger *slog.Logger,
 ) *UserMiddleware {
 	return &UserMiddleware{

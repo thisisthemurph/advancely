@@ -11,17 +11,17 @@ import (
 
 var ErrUserNotFound = errors.New("user not found")
 
-func NewUserStore(db *sqlx.DB) *UserStore {
-	return &UserStore{
+func NewPostgresUserStore(db *sqlx.DB) *PostgresUserStore {
+	return &PostgresUserStore{
 		DB: db,
 	}
 }
 
-type UserStore struct {
+type PostgresUserStore struct {
 	*sqlx.DB
 }
 
-func (s *UserStore) User(id uuid.UUID) (model.UserProfile, error) {
+func (s *PostgresUserStore) User(id uuid.UUID) (model.UserProfile, error) {
 	var u model.UserProfile
 	query := `
 		select 
@@ -41,7 +41,7 @@ func (s *UserStore) User(id uuid.UUID) (model.UserProfile, error) {
 	return u, nil
 }
 
-func (s *UserStore) BaseUserByEmail(email string) (model.User, error) {
+func (s *PostgresUserStore) BaseUserByEmail(email string) (model.User, error) {
 	query := `
 		select id, aud, role, email, invited_at, confirmed_at,
 		       confirmation_sent_at, created_at, updated_at
@@ -60,7 +60,7 @@ func (s *UserStore) BaseUserByEmail(email string) (model.User, error) {
 	return u, nil
 }
 
-func (s *UserStore) Users(companyID uuid.UUID) ([]model.UserProfile, error) {
+func (s *PostgresUserStore) Users(companyID uuid.UUID) ([]model.UserProfile, error) {
 	var uu []model.UserProfile
 	query := `
 		select 
@@ -76,7 +76,7 @@ func (s *UserStore) Users(companyID uuid.UUID) ([]model.UserProfile, error) {
 	return uu, nil
 }
 
-func (s *UserStore) CreateProfile(user *model.UserProfile) error {
+func (s *PostgresUserStore) CreateProfile(user *model.UserProfile) error {
 	query := `
 		insert into public.profiles (id, company_id, first_name, last_name, is_admin)
 		values ($1, $2, $3, $4, $5)
@@ -88,7 +88,7 @@ func (s *UserStore) CreateProfile(user *model.UserProfile) error {
 	return nil
 }
 
-func (s *UserStore) UpdateUser(user *model.UserProfile) error {
+func (s *PostgresUserStore) UpdateUser(user *model.UserProfile) error {
 	query := `
 		update public.profiles 
 		set first_name = $1, last_name = $2, is_admin = $3
@@ -101,7 +101,7 @@ func (s *UserStore) UpdateUser(user *model.UserProfile) error {
 	return nil
 }
 
-func (s *UserStore) DeleteUser(id uuid.UUID) error {
+func (s *PostgresUserStore) DeleteUser(id uuid.UUID) error {
 	if _, err := s.Exec("delete from auth.users where id = $1;", id); err != nil {
 		return fmt.Errorf("error deleting user: %w", err)
 	}

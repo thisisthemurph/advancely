@@ -4,8 +4,8 @@ import (
 	"advancely/internal/application"
 	"advancely/internal/auth"
 	"advancely/internal/model"
+	"advancely/internal/model/security"
 	"advancely/internal/store"
-	"advancely/internal/store/contract"
 	"advancely/internal/validation"
 	"context"
 	"errors"
@@ -19,7 +19,7 @@ import (
 
 func NewAuthHandler(
 	sb *supabase.Client,
-	s *store.Store,
+	s *store.PostgresStore,
 	config application.AppConfig,
 	logger *slog.Logger,
 ) AuthHandler {
@@ -35,9 +35,9 @@ func NewAuthHandler(
 
 type AuthHandler struct {
 	Supabase         *supabase.Client
-	UserStore        contract.UserStore
-	CompanyStore     contract.CompanyStore
-	PermissionsStore contract.PermissionsStore
+	UserStore        store.UserStore
+	CompanyStore     store.CompanyStore
+	PermissionsStore store.PermissionsStore
 	Config           application.AppConfig
 	Logger           *slog.Logger
 }
@@ -53,7 +53,7 @@ func (h AuthHandler) MakeRoutes(e *echo.Group) {
 func (h AuthHandler) handleLogout() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		user := auth.Session(c)
+		user := auth.CurrentUser(c)
 		if err := h.Supabase.Auth.SignOut(ctx, user.AccessToken); err != nil {
 			h.Logger.Error("Error logging out", "error", err)
 		}
@@ -229,7 +229,7 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 
 		// Assign the Admin role to the user
 
-		err = h.PermissionsStore.AssignSystemRoleToUser(model.SystemRoleAdmin, userID, company.ID)
+		err = h.PermissionsStore.AssignSystemRoleToUser(security.RoleAdmin, userID, company.ID)
 		if err != nil {
 			h.Logger.Error("failed to add admin role to user", "error", err)
 			return echo.NewHTTPError(500, "Failed to assign appropriate permissions to your user")

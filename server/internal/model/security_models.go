@@ -1,12 +1,6 @@
 package model
 
-import (
-	"github.com/google/uuid"
-)
-
-type SystemRole string
-
-const SystemRoleAdmin SystemRole = "Admin"
+import "github.com/google/uuid"
 
 // Role represents the security.roles table.
 type Role struct {
@@ -24,12 +18,14 @@ type CreateRole struct {
 	Description string    `json:"description"`
 }
 
+// PermissionGroup represents the security.permission_groups table.
 type PermissionGroup struct {
 	ID          int    `db:"id" json:"id"`
 	Name        string `db:"name" json:"name"`
 	Description string `db:"description" json:"description"`
 }
 
+// Permission represents the security.permissions table.
 type Permission struct {
 	ID          int             `db:"id" json:"id"`
 	Name        string          `db:"name" json:"name"`
@@ -37,6 +33,7 @@ type Permission struct {
 	Group       PermissionGroup `json:"group"`
 }
 
+// RoleWithPermissions represents the join between the security.roles and security.permissions table.
 type RoleWithPermissions struct {
 	Role
 	Permissions []Permission `json:"permissions"`

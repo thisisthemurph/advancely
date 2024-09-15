@@ -1,10 +1,13 @@
 package store
 
 import (
-	"advancely/internal/model"
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"advancely/internal/model"
+	"advancely/internal/model/security"
+	"advancely/pkg/errs"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -17,13 +20,13 @@ var (
 	ErrCannotUpdateSystemRole = errors.New("cannot update system role")
 )
 
-func NewPermissionsStore(db *sqlx.DB) *PermissionsStore {
-	return &PermissionsStore{
+func NewPostgresPermissionsStore(db *sqlx.DB) *PostgresPermissionsStore {
+	return &PostgresPermissionsStore{
 		DB: db,
 	}
 }
 
-type PermissionsStore struct {
+type PostgresPermissionsStore struct {
 	*sqlx.DB
 }
 
@@ -38,7 +41,7 @@ type rolePermission struct {
 	PermissionDesc sql.NullString `db:"permission_description"`
 }
 
-func (s *PermissionsStore) Role(id int, companyID *uuid.UUID) (model.RoleWithPermissions, error) {
+func (s *PostgresPermissionsStore) Role(id int, companyID *uuid.UUID) (model.RoleWithPermissions, error) {
 	stmt := `
 		select
 		  r.id, r.company_id, r.name, r.description, r.is_system_role,
@@ -84,7 +87,7 @@ func (s *PermissionsStore) Role(id int, companyID *uuid.UUID) (model.RoleWithPer
 	return role, nil
 }
 
-func (s *PermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithPermissions, error) {
+func (s *PostgresPermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithPermissions, error) {
 	stmt := `
 		select
 		  r.id, r.company_id, r.name, r.description, r.is_system_role,
@@ -97,7 +100,7 @@ func (s *PermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithPermissio
 
 	var rpList []rolePermission
 	if err := s.Select(&rpList, stmt, companyID); err != nil {
-		return nil, fmt.Errorf("failed to list roles for company ID %v: %w", companyID, err)
+		return []model.RoleWithPermissions{}, fmt.Errorf("failed to list roles for company ID %v: %w", companyID, err)
 	}
 
 	if rpList == nil {
@@ -138,7 +141,55 @@ func (s *PermissionsStore) Roles(companyID uuid.UUID) ([]model.RoleWithPermissio
 	return roles, nil
 }
 
-func (s *PermissionsStore) CreateRole(r model.CreateRole) (model.Role, error) {
+func (s *PostgresPermissionsStore) UserRoles(userID uuid.UUID) (security.UserRoleCollection, error) {
+	collection := security.UserRoleCollection{
+		UserID: userID,
+		Roles:  []security.UserRole{},
+	}
+
+	stmt := `
+		select
+		    r.id as role_id, r.name as role_name,
+		    p.id as permission_id, p.name as permission_name
+		from security.user_roles ur
+		join auth.users u on u.id = ur.user_id
+		join security.roles r on r.id = ur.role_id
+		join security.role_permissions rp on rp.role_id = r.id
+		join security.permissions p on p.id = rp.permission_id
+		where u.id = $1;`
+
+	var results []struct {
+		RoleID         int    `db:"role_id"`
+		RoleName       string `db:"role_name"`
+		PermissionID   int    `db:"permission_id"`
+		PermissionName string `db:"permission_name"`
+	}
+	if err := s.Select(&results, stmt, userID); err != nil {
+		return collection, err
+	}
+
+	roleMap := make(map[int]*security.UserRole)
+	for _, res := range results {
+		role, exists := roleMap[res.RoleID]
+		if !exists {
+			role = &security.UserRole{
+				Role:        security.Role(res.RoleName),
+				Permissions: []security.Permission{},
+			}
+		}
+
+		role.Permissions = append(role.Permissions, security.Permission(res.PermissionName))
+		roleMap[res.RoleID] = role
+	}
+
+	for _, role := range roleMap {
+		collection.Roles = append(collection.Roles, *role)
+	}
+
+	return collection, nil
+}
+
+func (s *PostgresPermissionsStore) CreateRole(r model.CreateRole) (model.Role, error) {
 	stmt := `
 		insert into security.roles (company_id, name, description)
 		values ($1, $2, $3)
@@ -152,7 +203,7 @@ func (s *PermissionsStore) CreateRole(r model.CreateRole) (model.Role, error) {
 	return createdRole, nil
 }
 
-func (s *PermissionsStore) UpdateRole(r *model.Role) error {
+func (s *PostgresPermissionsStore) UpdateRole(r *model.Role) error {
 	role, err := s.Role(r.ID, r.CompanyID)
 	if err != nil {
 		return fmt.Errorf("failed to find role with ID %d: %w", r.ID, err)
@@ -175,7 +226,7 @@ func (s *PermissionsStore) UpdateRole(r *model.Role) error {
 	return nil
 }
 
-func (s *PermissionsStore) DeleteRole(id int, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) DeleteRole(id int, companyID uuid.UUID) error {
 	role, err := s.Role(id, &companyID)
 	if err != nil {
 		return fmt.Errorf("failed to find role with ID %d: %w", id, err)
@@ -191,7 +242,7 @@ func (s *PermissionsStore) DeleteRole(id int, companyID uuid.UUID) error {
 	return nil
 }
 
-func (s *PermissionsStore) Permission(id int) (model.Permission, error) {
+func (s *PostgresPermissionsStore) Permission(id int) (model.Permission, error) {
 	stmt := `
 		select p.id, p.name, p.description,
 		       g.id as group_id,
@@ -231,7 +282,7 @@ func (s *PermissionsStore) Permission(id int) (model.Permission, error) {
 	return permission, nil
 }
 
-func (s *PermissionsStore) AssignPermissionToRole(roleID, permissionID int, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) AssignPermissionToRole(roleID, permissionID int, companyID uuid.UUID) error {
 	role, err := s.Role(roleID, &companyID)
 	if err != nil {
 		return err
@@ -247,7 +298,7 @@ func (s *PermissionsStore) AssignPermissionToRole(roleID, permissionID int, comp
 	stmt := "insert into security.role_permissions (role_id, permission_id) values ($1, $2)"
 	if _, err := s.Exec(stmt, roleID, permissionID); err != nil {
 		// Check for unique_violation error, the relationship already exists.
-		if pge := checkPgErr(err); errors.Is(pge, PgErrCodeUniqueViolation) {
+		if pge := errs.CheckPgErr(err); errors.Is(pge, errs.PgErrCodeUniqueViolation) {
 			return nil
 		}
 		return fmt.Errorf("failed to insert role permission: %w", err)
@@ -256,7 +307,7 @@ func (s *PermissionsStore) AssignPermissionToRole(roleID, permissionID int, comp
 	return nil
 }
 
-func (s *PermissionsStore) RemovePermissionFromRole(roleID, permissionID int, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) RemovePermissionFromRole(roleID, permissionID int, companyID uuid.UUID) error {
 	role, err := s.Role(roleID, &companyID)
 	if err != nil {
 		return err
@@ -272,7 +323,7 @@ func (s *PermissionsStore) RemovePermissionFromRole(roleID, permissionID int, co
 	return nil
 }
 
-func (s *PermissionsStore) AssignRoleToUser(roleID int, userID, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) AssignRoleToUser(roleID int, userID, companyID uuid.UUID) error {
 	_, err := s.Role(roleID, &companyID)
 	if err != nil {
 		return err
@@ -281,7 +332,7 @@ func (s *PermissionsStore) AssignRoleToUser(roleID int, userID, companyID uuid.U
 	stmt := "insert into security.user_roles (user_id, role_id) values ($1, $2);"
 	if _, err := s.Exec(stmt, userID, roleID); err != nil {
 		// Check for postgres unique_violation, relationship already exists
-		if pgErr := checkPgErr(err); errors.Is(pgErr, PgErrCodeUniqueViolation) {
+		if pgErr := errs.CheckPgErr(err); errors.Is(pgErr, errs.PgErrCodeUniqueViolation) {
 			return nil
 		}
 		return fmt.Errorf("failed to insert user role: %w", err)
@@ -289,7 +340,7 @@ func (s *PermissionsStore) AssignRoleToUser(roleID int, userID, companyID uuid.U
 	return nil
 }
 
-func (s *PermissionsStore) AssignSystemRoleToUser(role model.SystemRole, userID, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) AssignSystemRoleToUser(role security.Role, userID, companyID uuid.UUID) error {
 	var roleId int
 	stmt := "select id from security.roles where name = $1 and is_system_role = true;"
 	if err := s.Get(&roleId, stmt, role); err != nil {
@@ -298,7 +349,7 @@ func (s *PermissionsStore) AssignSystemRoleToUser(role model.SystemRole, userID,
 	return s.AssignRoleToUser(roleId, userID, companyID)
 }
 
-func (s *PermissionsStore) RemoveRoleFromUser(roleID int, userID, companyID uuid.UUID) error {
+func (s *PostgresPermissionsStore) RemoveRoleFromUser(roleID int, userID, companyID uuid.UUID) error {
 	stmt := "delete from security.user_roles where user_id = $1 and role_id = $2;"
 	if _, err := s.Exec(stmt, userID, roleID); err != nil {
 		return fmt.Errorf("failed to delete user role: %w", err)

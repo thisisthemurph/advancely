@@ -1,5 +1,8 @@
 .PHONY: migrate migrate-down
 
+test:
+	go test -v ./...
+
 api:
 	go run ./cmd/api
 

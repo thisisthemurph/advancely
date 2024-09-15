@@ -1,4 +1,4 @@
-package store
+package errs
 
 import (
 	"errors"
@@ -18,9 +18,9 @@ func TestCheckPgErr(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result := checkPgErr(test.err)
+		result := CheckPgErr(test.err)
 		if result != test.expected {
-			t.Errorf("checkPgErr(%q) = %v; want %v", test.err, result, test.expected)
+			t.Errorf("CheckPgErr(%q) = %v; want %v", test.err, result, test.expected)
 		}
 	}
 }
