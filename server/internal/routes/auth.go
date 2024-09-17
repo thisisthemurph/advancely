@@ -1,12 +1,6 @@
 package routes
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"log/slog"
-	"net/http"
-
 	"advancely/internal/application"
 	"advancely/internal/auth"
 	"advancely/internal/model"
@@ -14,20 +8,26 @@ import (
 	"advancely/internal/store"
 	"advancely/internal/validation"
 	"advancely/pkg/sbext"
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/nedpals/supabase-go"
+	"github.com/supabase-community/gotrue-go/types"
+	"github.com/supabase-community/supabase-go"
 )
 
 func NewAuthHandler(
-	supabaseClient *supabase.Client,
+	client *supabase.Client,
 	s *store.PostgresStore,
 	config application.AppConfig,
 	logger *slog.Logger,
 ) AuthHandler {
 	return AuthHandler{
-		Supabase:         sbext.NewSupabaseExtended(supabaseClient, config.Supabase, config.ClientBaseURL),
+		Supabase:         sbext.NewSupabaseExtended(client, config.Supabase, config.ClientBaseURL),
 		UserStore:        s.UserStore,
 		CompanyStore:     s.CompanyStore,
 		PermissionsStore: s.PermissionsStore,
@@ -57,9 +57,8 @@ func (h AuthHandler) MakeRoutes(e *echo.Group) {
 
 func (h AuthHandler) handleLogout() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		ctx := c.Request().Context()
 		user := auth.CurrentUser(c)
-		if err := h.Supabase.Auth.SignOut(ctx, user.AccessToken); err != nil {
+		if err := h.Supabase.Auth.WithToken(user.AccessToken).Logout(); err != nil {
 			h.Logger.Error("Error logging out", "error", err)
 		}
 		if err := auth.DeleteSessionCookie(c, h.Config.SessionSecret); err != nil {
@@ -76,38 +75,37 @@ func (h AuthHandler) handleLogin() echo.HandlerFunc {
 	}
 
 	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-
 		var req Request
 		if err := validation.BindAndValidate(c, &req); err != nil {
 			h.Logger.Error("failed binding/validating login request", "error", err)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		authDetails, err := h.Supabase.Auth.SignIn(ctx, supabase.UserCredentials{
-			Email:    req.Email,
-			Password: req.Password,
-		})
+		token, err := h.Supabase.Auth.SignInWithEmailPassword(req.Email, req.Password)
 		if err != nil {
+			if sbErr, isSbErr := sbext.NewError(err); isSbErr {
+				return echo.NewHTTPError(sbErr.Code, sbErr.Message)
+			}
 			h.Logger.Error("failed signing in with supabase", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 
-		session := auth.NewSessionCookie(authDetails)
+		session := auth.NewSessionCookie(token.Session)
 
-		user, err := h.UserStore.User(session.Sub)
+		user, err := h.UserStore.User(token.User.ID)
 		if err != nil {
 			h.Logger.Error("failed getting user from store", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
-		session.SetUser(user)
 
 		company, err := h.CompanyStore.Company(user.CompanyID)
 		if err != nil {
 			h.Logger.Error("failed getting company from store", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
-		session.SetUserCompany(company)
+
+		session.SetUser(user)
+		session.SetCompany(company)
 
 		if err := session.SetCookie(c, h.Config.SessionSecret, h.Config.Environment); err != nil {
 			h.Logger.Error("failed setting session cookie", "error", err)
@@ -130,10 +128,6 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 		Password      string `json:"password" validate:"required,min=8"`
 	}
 
-	type UserMetadata struct {
-		CompanyName string `json:"company_name"`
-	}
-
 	type SignupResponse struct {
 		ID            string `json:"id"`
 		UserFirstName string `json:"firstName"`
@@ -144,14 +138,19 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 
 	// getOrSignupSupabaseUser is an idempotent function for signing up with Supabase auth.
 	// If the user already exists, the supabase.User is returned, otherwise signup is completed.
-	getOrSignupSupabaseUser := func(ctx context.Context, form formParams) (*supabase.User, error) {
+	getOrSignupSupabaseUser := func(ctx context.Context, form formParams) (*types.User, error) {
 		existingUser, err := h.UserStore.BaseUserByEmail(form.UserEmail)
 		if errors.Is(err, store.ErrUserNotFound) {
-			return h.Supabase.Auth.SignUp(ctx, supabase.UserCredentials{
+			resp, err := h.Supabase.Auth.Signup(types.SignupRequest{
 				Email:    form.UserEmail,
 				Password: form.Password,
-				Data:     UserMetadata{CompanyName: form.CompanyName},
+				Data: map[string]interface{}{
+					"company_name": form.CompanyName,
+				},
 			})
+			// Signup returns either different response depending on the autoconfirm setting.
+			// User if autoconfirm is off, Session if on.
+			return &resp.User, err
 		}
 		return existingUser.SupabaseUser(), err
 	}
@@ -199,7 +198,6 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 			msg := fmt.Sprintf("Failed to create user with email address %s.", form.UserEmail)
 			return echo.NewHTTPError(500, msg)
 		}
-		userID, err := uuid.Parse(user.ID)
 		if err != nil {
 			h.Logger.Error("failed to parse user ID", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "Invalid user ID.")
@@ -209,7 +207,7 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 
 		company, err := getOrCreateCompany(model.Company{
 			Name:      form.CompanyName,
-			CreatorID: userID,
+			CreatorID: user.ID,
 		})
 		if err != nil {
 			h.Logger.Error("failed to create company", "error", err)
@@ -220,7 +218,7 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 		// CreateCompany the initial admin user profile
 
 		profile, err := getOrCreateUserProfile(model.UserProfile{
-			ID:        userID,
+			ID:        user.ID,
 			CompanyID: company.ID,
 			FirstName: form.UserFirstName,
 			LastName:  form.UserLastName,
@@ -234,14 +232,14 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 
 		// Assign the Admin role to the user
 
-		err = h.PermissionsStore.AssignSystemRoleToUser(security.RoleAdmin, userID, company.ID)
+		err = h.PermissionsStore.AssignSystemRoleToUser(security.RoleAdmin, user.ID, company.ID)
 		if err != nil {
 			h.Logger.Error("failed to add admin role to user", "error", err)
 			return echo.NewHTTPError(500, "Failed to assign appropriate permissions to your user")
 		}
 
 		return c.JSON(http.StatusOK, SignupResponse{
-			ID:            user.ID,
+			ID:            user.ID.String(),
 			UserFirstName: profile.FirstName,
 			UserLastName:  profile.LastName,
 			UserEmail:     user.Email,
@@ -256,22 +254,20 @@ func (h AuthHandler) handleVerifyEmailVerificationComplete() echo.HandlerFunc {
 	}
 
 	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-
 		var req Request
 		if err := validation.BindAndValidate(c, &req); err != nil {
 			h.Logger.Error("failed to bind/validate verification request", "error", err)
 			return err
 		}
 
-		user, err := h.Supabase.Auth.User(ctx, req.Token)
-		if err != nil || user == nil {
+		user, err := h.Supabase.Auth.WithToken(req.Token).GetUser()
+		if err != nil || user == nil || user.ID == uuid.Nil {
 			h.Logger.Error("failed to verify user", "error", err)
 			return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
 		}
 
-		if user.ConfirmedAt.IsZero() {
-			return c.NoContent(http.StatusUnauthorized)
+		if user.EmailConfirmedAt.IsZero() {
+			return echo.NewHTTPError(http.StatusUnauthorized, "Email address not confirmed")
 		}
 		return c.NoContent(http.StatusNoContent)
 	}
@@ -306,37 +302,47 @@ func (h AuthHandler) handleConfirmPasswordReset() echo.HandlerFunc {
 	}
 
 	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-
 		var req request
 		if err := validation.BindAndValidate(c, &req); err != nil {
 			return err
 		}
 
-		ad, err := h.Supabase.Extensions.VerifyOTPForEmail(ctx, req.Email, req.OTP)
-		if err != nil {
-			var sbErr *sbext.Error
-			if errors.As(err, &sbErr) {
-				if sbErr.ErrorCode == sbext.SupabaseErrorCodeOTPExpired {
-					return echo.NewHTTPError(http.StatusUnauthorized, "OTP is invalid or has expired")
-				}
+		// redirectTo seems to serve no purpose here, but is required.
+		_, err := h.Supabase.Auth.VerifyForUser(types.VerifyForUserRequest{
+			Type:       "recovery",
+			Token:      req.OTP,
+			Email:      req.Email,
+			RedirectTo: h.Config.ClientBaseURL + "/auth/password-reset",
+		})
+
+		// The response from the above Supabase method seems to come in the error as JSON.
+		// First we attempt to parse a success response from the error.
+		session, jsonParseErr := sbext.ParseSessionFromErrJson(err)
+		if jsonParseErr != nil && err != nil {
+			sbErr, isSbErr := sbext.NewError(err)
+			if isSbErr && sbErr.ErrorCode == sbext.ErrorCodeOTPExpired {
+				return echo.NewHTTPError(http.StatusUnauthorized, "OTP is invalid or has expired")
 			}
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
-		if ad == nil {
+		if session == nil || session.AccessToken == "" {
 			return echo.NewHTTPError(http.StatusUnauthorized)
 		}
 
-		cookie := auth.NewSessionCookie(ad)
+		cookie := auth.NewSessionCookie(*session)
 		if err := cookie.SetCookie(c, h.Config.SessionSecret, h.Config.Environment); err != nil {
 			h.Logger.Error("failed to set session cookie", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 
-		_, err = h.Supabase.Auth.UpdateUser(ctx, ad.AccessToken, map[string]interface{}{
-			"password": req.NewPassword,
+		_, err = h.Supabase.Auth.WithToken(session.AccessToken).UpdateUser(types.UpdateUserRequest{
+			Password: &req.NewPassword,
 		})
 		if err != nil {
+			sbErr, isSbErr := sbext.NewError(err)
+			if isSbErr && sbErr.ErrorCode == sbext.ErrorCodeSamePassword {
+				return echo.NewHTTPError(http.StatusBadRequest, sbErr.Message)
+			}
 			h.Logger.Error("failed to update user password", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}

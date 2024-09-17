@@ -8,7 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/nedpals/supabase-go"
+	"github.com/supabase-community/gotrue-go/types"
+	"github.com/supabase-community/supabase-go"
 	"log/slog"
 )
 
@@ -18,20 +19,20 @@ var (
 )
 
 type UserMiddleware struct {
-	*supabase.Client
 	UserStore store.UserStore
 	Config    application.AppConfig
 	Logger    *slog.Logger
+	Supabase  *supabase.Client
 }
 
 func NewUserMiddleware(
 	config application.AppConfig,
-	client *supabase.Client,
+	supabaseClient *supabase.Client,
 	userStore store.UserStore,
 	logger *slog.Logger,
 ) *UserMiddleware {
 	return &UserMiddleware{
-		Client:    client,
+		Supabase:  supabaseClient,
 		Config:    config,
 		UserStore: userStore,
 		Logger:    logger,
@@ -50,13 +51,13 @@ func (m *UserMiddleware) WithUserInContext(next echo.HandlerFunc) echo.HandlerFu
 		}
 
 		if session.Expired() {
-			refreshedAuthDetails, err := m.refreshSupabaseUser(ctx, session)
+			tokenResp, err := m.refreshSupabaseUser(ctx, session)
 			if err != nil {
 				logger.Debug("failed to refresh supabase user", "error", err)
 				return next(c)
 			}
 
-			session = auth.NewSessionCookie(refreshedAuthDetails)
+			session = auth.NewSessionCookie(tokenResp.Session)
 			if err := session.SetCookie(c, m.Config.SessionSecret, m.Config.Environment); err != nil {
 				logger.Error("failed to set cookie", "error", err)
 				return next(c)
@@ -70,7 +71,7 @@ func (m *UserMiddleware) WithUserInContext(next echo.HandlerFunc) echo.HandlerFu
 
 // refreshSupabaseUser refreshes the user wit the refresh token, returning the new supabase.AuthenticatedDetails.
 // Returns an error if tokens are missing in the session or if there is an error refreshing via Supabase.
-func (m *UserMiddleware) refreshSupabaseUser(ctx context.Context, session *auth.SessionCookie) (*supabase.AuthenticatedDetails, error) {
+func (m *UserMiddleware) refreshSupabaseUser(ctx context.Context, session *auth.SessionCookie) (*types.TokenResponse, error) {
 	if len(session.AccessToken) == 0 {
 		return nil, ErrorNoAccessToken
 	}
@@ -78,9 +79,9 @@ func (m *UserMiddleware) refreshSupabaseUser(ctx context.Context, session *auth.
 		return nil, ErrorNoRefreshToken
 	}
 
-	refreshedAuth, err := m.Auth.RefreshUser(ctx, session.AccessToken, session.RefreshToken)
+	resp, err := m.Supabase.Auth.WithToken(session.AccessToken).RefreshToken(session.RefreshToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to refresh user: %w", err)
 	}
-	return refreshedAuth, nil
+	return resp, nil
 }

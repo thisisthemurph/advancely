@@ -10,11 +10,16 @@ type AuthenticatedSessionUser struct {
 	Email string
 }
 
+type AuthenticatedSessionCompany struct {
+	ID uuid.UUID
+}
+
 type AuthenticatedSession struct {
 	LoggedIn bool
 
 	SessionCookie
 	AuthenticatedSessionUser
+	AuthenticatedSessionCompany
 }
 
 // CurrentUser returns the current user session stored in the echo.Context.
@@ -26,13 +31,18 @@ func CurrentUser(c echo.Context) AuthenticatedSession {
 	}
 
 	user := AuthenticatedSessionUser{
-		ID:    session.Sub,
-		Email: session.Email,
+		ID:    session.User.ID,
+		Email: session.User.Email,
+	}
+
+	company := AuthenticatedSessionCompany{
+		ID: session.Company.ID,
 	}
 
 	return AuthenticatedSession{
-		LoggedIn:                 true,
-		SessionCookie:            session,
-		AuthenticatedSessionUser: user,
+		LoggedIn:                    true,
+		SessionCookie:               session,
+		AuthenticatedSessionUser:    user,
+		AuthenticatedSessionCompany: company,
 	}
 }

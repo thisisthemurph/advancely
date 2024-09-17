@@ -72,7 +72,7 @@ func (h PermissionsHandler) handleGetRoleWithPermissions() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "Role ID could not be parsed")
 		}
 
-		role, err := h.PermissionsStore.Role(roleId, &session.User.Company.ID)
+		role, err := h.PermissionsStore.Role(roleId, &session.Company.ID)
 		if err != nil {
 			if errors.Is(err, store.ErrRoleNotFound) {
 				return echo.NewHTTPError(http.StatusNotFound, err.Error())
@@ -86,7 +86,7 @@ func (h PermissionsHandler) handleGetRoleWithPermissions() echo.HandlerFunc {
 func (h PermissionsHandler) handleListRolesWithPermissions() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		session := auth.CurrentUser(c)
-		roles, err := h.PermissionsStore.Roles(session.User.Company.ID)
+		roles, err := h.PermissionsStore.Roles(session.Company.ID)
 		if err != nil {
 			h.Logger.Error("failed to list roles", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
@@ -115,7 +115,7 @@ func (h PermissionsHandler) handleCreateRole() echo.HandlerFunc {
 		}
 
 		role := model.CreateRole{
-			CompanyID:   session.User.Company.ID,
+			CompanyID:   session.Company.ID,
 			Name:        request.Name,
 			Description: request.Description,
 		}
@@ -148,7 +148,7 @@ func (h PermissionsHandler) handleUpdateRole() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "could not determine the role ID")
 		}
 
-		role, err := h.PermissionsStore.Role(roleId, &session.User.Company.ID)
+		role, err := h.PermissionsStore.Role(roleId, &session.Company.ID)
 		if err != nil {
 			if errors.Is(err, store.ErrRoleNotFound) {
 				return echo.NewHTTPError(http.StatusNotFound, err.Error())
@@ -197,7 +197,7 @@ func (h PermissionsHandler) handleDeleteRole() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "role id is invalid")
 		}
 
-		if err := h.PermissionsStore.DeleteRole(roleId, session.User.Company.ID); err != nil {
+		if err := h.PermissionsStore.DeleteRole(roleId, session.Company.ID); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 		return c.NoContent(http.StatusNoContent)
@@ -217,7 +217,7 @@ func (h PermissionsHandler) handleAssignPermissionToRole() echo.HandlerFunc {
 			return echo.NewHTTPError(400, "role or permission ID not valid")
 		}
 
-		if err := h.PermissionsStore.AssignPermissionToRole(roleID, permissionId, session.User.Company.ID); err != nil {
+		if err := h.PermissionsStore.AssignPermissionToRole(roleID, permissionId, session.Company.ID); err != nil {
 			if errors.Is(err, store.ErrCannotUpdateSystemRole) {
 				return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 			}
@@ -244,7 +244,7 @@ func (h PermissionsHandler) handleRemovePermissionFromRole() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "role or permission ID not valid")
 		}
 
-		if err := h.PermissionsStore.RemovePermissionFromRole(roleID, permissionId, session.User.Company.ID); err != nil {
+		if err := h.PermissionsStore.RemovePermissionFromRole(roleID, permissionId, session.Company.ID); err != nil {
 			if errors.Is(err, store.ErrRoleNotFound) {
 				return echo.NewHTTPError(http.StatusNotFound, err.Error())
 			}
@@ -275,7 +275,7 @@ func (h PermissionsHandler) handleAssignRoleToUser() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "user ID not valid")
 		}
 
-		if err := h.PermissionsStore.AssignRoleToUser(roleID, userID, session.User.Company.ID); err != nil {
+		if err := h.PermissionsStore.AssignRoleToUser(roleID, userID, session.Company.ID); err != nil {
 			if errors.Is(err, store.ErrRoleNotFound) {
 				return echo.NewHTTPError(http.StatusNotFound, err.Error())
 			}
@@ -303,7 +303,7 @@ func (h PermissionsHandler) handleRemoveRoleFromUser() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "user ID not valid")
 		}
 
-		if err := h.PermissionsStore.RemoveRoleFromUser(roleID, userID, session.User.Company.ID); err != nil {
+		if err := h.PermissionsStore.RemoveRoleFromUser(roleID, userID, session.Company.ID); err != nil {
 			h.Logger.Error("error removing role from user", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}

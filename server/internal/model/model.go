@@ -2,42 +2,33 @@ package model
 
 import (
 	"github.com/google/uuid"
-	"github.com/nedpals/supabase-go"
+	"github.com/supabase-community/gotrue-go/types"
 	"time"
 )
 
 // User represents a subset of columns from the Supabase auth.users table.
 type User struct {
-	ID                 string     `db:"id"`
+	ID                 uuid.UUID  `db:"id"`
 	Aud                string     `db:"aud"`
 	Role               string     `db:"role"`
 	Email              string     `db:"email"`
+	EmailConfirmedAt   *time.Time `db:"email_confirmed_at"`
 	InvitedAt          *time.Time `db:"invited_at"`
-	ConfirmedAt        *time.Time `db:"confirmed_at"`
 	ConfirmationSentAt *time.Time `db:"confirmation_sent_at"`
 	CreatedAt          time.Time  `db:"created_at"`
 	UpdatedAt          time.Time  `db:"updated_at"`
 }
 
-func (u *User) SupabaseUser() *supabase.User {
-	var invitedAt, confirmedAt, confirmationSentAt time.Time
-	if u.InvitedAt != nil {
-		invitedAt = *u.InvitedAt
-	}
-	if u.ConfirmedAt != nil {
-		confirmedAt = *u.ConfirmedAt
-	}
-	if u.ConfirmationSentAt != nil {
-		confirmationSentAt = *u.ConfirmationSentAt
-	}
-	return &supabase.User{
+// SupabaseUser converts a User to a gotrue-go types.User.
+func (u *User) SupabaseUser() *types.User {
+	return &types.User{
 		ID:                 u.ID,
 		Aud:                u.Aud,
 		Role:               u.Role,
 		Email:              u.Email,
-		InvitedAt:          invitedAt,
-		ConfirmedAt:        confirmedAt,
-		ConfirmationSentAt: confirmationSentAt,
+		EmailConfirmedAt:   u.EmailConfirmedAt,
+		InvitedAt:          u.InvitedAt,
+		ConfirmationSentAt: u.ConfirmationSentAt,
 		CreatedAt:          u.CreatedAt,
 		UpdatedAt:          u.UpdatedAt,
 	}

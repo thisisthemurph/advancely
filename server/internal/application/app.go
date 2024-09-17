@@ -9,7 +9,7 @@ import (
 	"advancely/internal/store"
 
 	"github.com/joho/godotenv"
-	"github.com/nedpals/supabase-go"
+	"github.com/supabase-community/supabase-go"
 )
 
 // App represents the configuration of the server application.
@@ -56,7 +56,13 @@ func (app *App) Build() {
 // createSupabaseClient creates a new supabase client using the environment variables set on App.
 func (app *App) createSupabaseClient() {
 	app.Logger.Info("initializing Supabase client")
-	app.Supabase = supabase.CreateClient(app.Config.Supabase.URL, app.Config.Supabase.PublicKey)
+
+	client, err := supabase.NewClient(app.Config.Supabase.URL, app.Config.Supabase.PublicKey, nil)
+	if err != nil {
+		app.Logger.Error("failed to create Supabase client", "error", err)
+		panic(err)
+	}
+	app.Supabase = client
 }
 
 // configureStores sets up the stores using the configured database URI.

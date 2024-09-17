@@ -43,7 +43,7 @@ func (s *PostgresUserStore) User(id uuid.UUID) (model.UserProfile, error) {
 
 func (s *PostgresUserStore) BaseUserByEmail(email string) (model.User, error) {
 	query := `
-		select id, aud, role, email, invited_at, confirmed_at,
+		select id, aud, role, email, email_confirmed_at, invited_at,
 		       confirmation_sent_at, created_at, updated_at
 		from auth.users
 		where email = $1 
