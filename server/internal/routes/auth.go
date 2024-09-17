@@ -21,13 +21,13 @@ import (
 )
 
 func NewAuthHandler(
-	client *supabase.Client,
+	supabaseClient *supabase.Client,
 	s *store.PostgresStore,
 	config application.AppConfig,
 	logger *slog.Logger,
 ) AuthHandler {
 	return AuthHandler{
-		Supabase:         sbext.NewSupabaseExtended(client, config.Supabase, config.ClientBaseURL),
+		Supabase:         sbext.NewSupabaseExtended(supabaseClient, config.Supabase),
 		UserStore:        s.UserStore,
 		CompanyStore:     s.CompanyStore,
 		PermissionsStore: s.PermissionsStore,
@@ -286,7 +286,8 @@ func (h AuthHandler) handleTriggerPasswordReset() echo.HandlerFunc {
 			return err
 		}
 
-		if err := h.Supabase.Extensions.ResetPasswordForEmail(ctx, req.Email, "/auth/password-reset"); err != nil {
+		redirect := h.Config.ClientBaseURL + "/auth/password-reset"
+		if err := h.Supabase.Extensions.ResetPasswordForEmail(ctx, req.Email, redirect); err != nil {
 			h.Logger.Error("failed to trigger password reset", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
