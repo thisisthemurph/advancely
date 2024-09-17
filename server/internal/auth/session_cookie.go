@@ -1,17 +1,19 @@
 package auth
 
 import (
-	"advancely/internal/application"
-	"advancely/internal/model"
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
+
+	"advancely/internal/application"
+	"advancely/internal/model"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
-	"github.com/nedpals/supabase-go"
-	"net/http"
-	"time"
+	"github.com/supabase-community/gotrue-go/types"
 )
 
 const (
@@ -26,48 +28,45 @@ func init() {
 	gob.Register(&SessionCookie{})
 }
 
+func NewSessionCookie(session types.Session) *SessionCookie {
+	return &SessionCookie{
+		AccessToken:  session.AccessToken,
+		RefreshToken: session.RefreshToken,
+		TokenType:    session.TokenType,
+		ExpiresIn:    session.ExpiresIn,
+		ExpiresAt:    session.ExpiresAt,
+		User: &SessionCookieUser{
+			ID:    session.User.ID,
+			Email: session.User.Email,
+		},
+	}
+}
+
+type SessionCookieUser struct {
+	ID        uuid.UUID
+	Email     string
+	FirstName string
+	LastName  string
+}
+
 type SessionCookieCompany struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
 }
 
-type SessionCookieUser struct {
-	ID        uuid.UUID             `json:"id"`
-	FirstName string                `json:"firstName"`
-	LastName  string                `json:"lastName"`
-	Email     string                `json:"email"`
-	Company   *SessionCookieCompany `json:"company,omitempty"`
-}
-
 type SessionCookie struct {
-	Sub          uuid.UUID          `json:"sub"`
-	Aud          string             `json:"aud"`
-	Role         string             `json:"role"`
-	Email        string             `json:"email"`
-	AccessToken  string             `json:"accessToken"`
-	RefreshToken string             `json:"refreshToken"`
-	ExpiresAt    time.Time          `json:"expiresAt"`
-	User         *SessionCookieUser `json:"user,omitempty"`
+	AccessToken  string                `json:"access_token"`
+	RefreshToken string                `json:"refresh_token"`
+	TokenType    string                `json:"token_type"`
+	ExpiresIn    int                   `json:"expires_in"`
+	ExpiresAt    int64                 `json:"expires_at"`
+	Company      *SessionCookieCompany `json:"company"`
+	User         *SessionCookieUser    `json:"user"`
 }
 
-func NewSessionCookie(details *supabase.AuthenticatedDetails) *SessionCookie {
-	userID, _ := uuid.Parse(details.User.ID)
-	return &SessionCookie{
-		Sub:          userID,
-		Aud:          details.User.Aud,
-		Role:         details.User.Role,
-		Email:        details.User.Email,
-		AccessToken:  details.AccessToken,
-		RefreshToken: details.RefreshToken,
-		ExpiresAt:    time.Now().UTC().Add(time.Duration(details.ExpiresIn) * time.Second),
-	}
-}
-
-// SetCookie saves the SessionCookie using the provided echo context.
-// Returns an error if there are issues fetching or saving the cookie store.
-func (s *SessionCookie) SetCookie(c echo.Context, secret string, environment application.Environment) error {
+func (s *SessionCookie) SetCookie(c echo.Context, secret string, env application.Environment) error {
 	sameSiteMode := http.SameSiteLaxMode
-	if environment.IsProduction() {
+	if env.IsProduction() {
 		sameSiteMode = http.SameSiteStrictMode
 	}
 
@@ -75,7 +74,7 @@ func (s *SessionCookie) SetCookie(c echo.Context, secret string, environment app
 	store.Options = &sessions.Options{
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   environment.IsProduction(),
+		Secure:   env.IsProduction(),
 		SameSite: sameSiteMode,
 		MaxAge:   3600 * 24,
 	}
@@ -96,23 +95,22 @@ func (s *SessionCookie) SaveInContext(c echo.Context) {
 
 // Expired returns true if the session ExpiresAt is in the past.
 func (s *SessionCookie) Expired() bool {
-	return time.Now().After(s.ExpiresAt)
+	expirationTime := time.Unix(s.ExpiresAt, 0)
+	currentTime := time.Now()
+	return currentTime.After(expirationTime)
 }
 
 func (s *SessionCookie) SetUser(u model.UserProfile) {
 	s.User = &SessionCookieUser{
 		ID:        u.ID,
+		Email:     u.Email,
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
-		Email:     u.Email,
 	}
 }
 
-func (s *SessionCookie) SetUserCompany(c model.Company) {
-	if s.User == nil {
-		s.User = &SessionCookieUser{}
-	}
-	s.User.Company = &SessionCookieCompany{
+func (s *SessionCookie) SetCompany(c model.Company) {
+	s.Company = &SessionCookieCompany{
 		ID:   c.ID,
 		Name: c.Name,
 	}

@@ -2,7 +2,7 @@ package sbext
 
 import (
 	"encoding/json"
-	"io"
+	"strings"
 )
 
 // Error represents the JSON error returned from Supabase API calls.
@@ -17,21 +17,25 @@ func (e *Error) Error() string {
 	return e.Message
 }
 
-// NewError creates a new *Error from an io.Reader interface.
-// The method also returns a boolean indicating of the error was successfully
-// deserialized from the reader.
-func NewError(r io.Reader) (*Error, bool) {
-	b, err := io.ReadAll(r)
-	if err != nil {
+// NewError creates a new *Error from an error.
+// The method also returns a boolean indicating of the error was successfully deserialized.
+func NewError(err error) (*Error, bool) {
+	data := err.Error()
+	start := strings.Index(data, "{")
+	if start == -1 {
 		return nil, false
 	}
+	jsonData := data[start:]
+
 	var sbErr Error
-	if err = json.Unmarshal(b, &sbErr); err != nil {
+	if err := json.Unmarshal([]byte(jsonData), &sbErr); err != nil {
 		return nil, false
 	}
-	return &sbErr, true
+	return &sbErr, sbErr.Code != 0
 }
 
 const (
-	SupabaseErrorCodeOTPExpired string = "otp_expired"
+	ErrorCodeInvalidCredentials string = "invalid_credentials"
+	ErrorCodeOTPExpired         string = "otp_expired"
+	ErrorCodeSamePassword       string = "same_password"
 )
