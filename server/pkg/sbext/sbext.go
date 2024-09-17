@@ -70,7 +70,7 @@ func (c *Extensions) ResetPasswordForEmail(ctx context.Context, email, redirectT
 // post sends a POST request to the Supabase server and returns the response.
 // The apikey header is set automatically on all requests.
 func (c *Extensions) post(ctx context.Context, path string, body io.Reader) (*http.Response, error) {
-	url := fmt.Sprintf("%s/auth/v1/%s", c.Config.PublicKey, path)
+	url := fmt.Sprintf("%s/auth/v1%s", c.Config.URL, path)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
