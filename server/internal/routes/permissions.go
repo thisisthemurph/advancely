@@ -22,10 +22,12 @@ func NewPermissionsHandler(
 	s *store.PostgresStore,
 	config application.AppConfig,
 	logger *slog.Logger,
+	ensurePermissionFn EnsurePermissionFn,
 ) PermissionsHandler {
 	return PermissionsHandler{
 		UserStore:        s.UserStore,
 		PermissionsStore: s.PermissionsStore,
+		EnsurePermission: ensurePermissionFn,
 		Config:           config,
 		Logger:           logger,
 	}
@@ -34,14 +36,9 @@ func NewPermissionsHandler(
 type PermissionsHandler struct {
 	UserStore        store.UserStore
 	PermissionsStore store.PermissionsStore
+	EnsurePermission EnsurePermissionFn
 	Config           application.AppConfig
 	Logger           *slog.Logger
-}
-
-// EnsurePermission returns an echo.HTTPError if the permission does not exist for the
-// current authenticated session user.
-func (h PermissionsHandler) EnsurePermission(c echo.Context, permission security.Permission) *echo.HTTPError {
-	return EnsurePermission(c, h.PermissionsStore, permission)
 }
 
 func (h PermissionsHandler) MakeRoutes(e *echo.Group) {

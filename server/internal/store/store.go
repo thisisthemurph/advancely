@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 
 	"advancely/internal/model"
@@ -20,21 +21,24 @@ func NewPostgresStore(connectionString string) (*PostgresStore, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 	return &PostgresStore{
-		UserStore:        NewPostgresUserStore(db),
-		CompanyStore:     NewPostgresCompanyStore(db),
-		PermissionsStore: NewPostgresPermissionsStore(db),
+		UserStore:            NewPostgresUserStore(db),
+		CompanyStore:         NewPostgresCompanyStore(db),
+		CompanySettingsStore: NewPostgresCompanySettingsStore(db),
+		PermissionsStore:     NewPostgresPermissionsStore(db),
 	}, nil
 }
 
 type PostgresStore struct {
 	UserStore
 	CompanyStore
+	CompanySettingsStore
 	PermissionsStore
 }
 
 type Store interface {
 	UserStore
 	CompanyStore
+	CompanySettingsStore
 	PermissionsStore
 }
 
@@ -61,6 +65,12 @@ type CompanyStore interface {
 	CreateCompany(c *model.Company) error
 	UpdateCompany(c *model.Company) error
 	DeleteCompany(id uuid.UUID) error
+}
+
+type CompanySettingsStore interface {
+	// AddAllowedEmailDomain adds a new domain that can be used to auth for a company.
+	// Any other domains will be prevented from signing up with that company.
+	AddAllowedEmailDomain(ctx context.Context, companyID uuid.UUID, domain string) error
 }
 
 type RoleFetcher interface {

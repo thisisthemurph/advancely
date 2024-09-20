@@ -1,9 +1,17 @@
 package validation
 
 import (
+	"errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
+	"net"
 	"net/http"
+	"regexp"
+)
+
+var (
+	ErrInvalidDomain = errors.New("invalid domain")
+	ErrUnknownDomain = errors.New("unknown domain")
 )
 
 type CustomValidator struct {
@@ -26,6 +34,18 @@ func BindAndValidate(c echo.Context, i interface{}) *echo.HTTPError {
 	}
 	if err := c.Validate(i); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	return nil
+}
+
+func ValidateDomain(domain string) error {
+	var domainRegex = regexp.MustCompile(`^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$`)
+	if !domainRegex.MatchString(domain) {
+		return ErrInvalidDomain
+	}
+	_, err := net.LookupHost(domain)
+	if err != nil {
+		return ErrUnknownDomain
 	}
 	return nil
 }
