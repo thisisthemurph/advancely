@@ -10,16 +10,21 @@ import (
 	"net/http"
 )
 
-func NewCompaniesHandler(s *store.PostgresStore, logger *slog.Logger) CompaniesHandler {
+func NewCompaniesHandler(
+	s *store.PostgresStore,
+	logger *slog.Logger,
+	ensurePermissionFn EnsurePermissionFn) CompaniesHandler {
 	return CompaniesHandler{
 		CompanySettingsStore: s.CompanySettingsStore,
 		Logger:               logger,
+		EnsurePermission:     ensurePermissionFn,
 	}
 }
 
 type CompaniesHandler struct {
 	CompanySettingsStore store.CompanySettingsStore
 	Logger               *slog.Logger
+	EnsurePermission     EnsurePermissionFn
 }
 
 func (h CompaniesHandler) MakeRoutes(e *echo.Group) {
