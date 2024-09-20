@@ -2,6 +2,7 @@ package routes
 
 import (
 	"advancely/internal/auth"
+	"advancely/internal/model/security"
 	"advancely/internal/store"
 	"advancely/internal/validation"
 	"errors"
@@ -39,6 +40,10 @@ func (h CompaniesHandler) handleAddAllowedDomain() echo.HandlerFunc {
 	}
 
 	return func(c echo.Context) error {
+		if err := h.EnsurePermission(c, security.PermissionEditOrganizationSettings); err != nil {
+			return err
+		}
+
 		ctx := c.Request().Context()
 		user := auth.CurrentUser(c)
 
