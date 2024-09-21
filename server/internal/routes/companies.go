@@ -30,15 +30,15 @@ type CompaniesHandler struct {
 
 func (h CompaniesHandler) MakeRoutes(e *echo.Group) {
 	group := e.Group("/company/settings")
-	group.POST("/domain", h.handleAddAllowedDomain())
+	group.POST("/domain", h.HandleAddAllowedDomain())
 }
 
-func (h CompaniesHandler) handleAddAllowedDomain() echo.HandlerFunc {
-	type request struct {
-		Domain              string `json:"domain"`
-		AllowUnknownDomains bool   `json:"allowUnknownDomains"`
-	}
+type AddAllowedDomainRequest struct {
+	Domain              string `json:"domain"`
+	AllowUnknownDomains bool   `json:"allowUnknownDomains"`
+}
 
+func (h CompaniesHandler) HandleAddAllowedDomain() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if err := h.EnsurePermission(c, security.PermissionEditOrganizationSettings); err != nil {
 			return err
@@ -47,7 +47,7 @@ func (h CompaniesHandler) handleAddAllowedDomain() echo.HandlerFunc {
 		ctx := c.Request().Context()
 		user := auth.CurrentUser(c)
 
-		var req request
+		var req AddAllowedDomainRequest
 		if err := validation.BindAndValidate(c, &req); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}

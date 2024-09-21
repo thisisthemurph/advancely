@@ -43,10 +43,10 @@ func NewRouter(app *application.App) *Router {
 
 type EnsurePermissionFn = func(c echo.Context, permission security.Permission) *echo.HTTPError
 
-func (r *Router) getRouteHandlers(app *application.App) []RouteMaker {
-	ensurePermissionFn := func(c echo.Context, permission security.Permission) *echo.HTTPError {
+func EnsurePermissionsFnFactory(fetcher store.RoleFetcher) EnsurePermissionFn {
+	return func(c echo.Context, permission security.Permission) *echo.HTTPError {
 		session := auth.CurrentUser(c)
-		roles, err := r.RoleFetcher.UserRoles(session.User.ID)
+		roles, err := fetcher.UserRoles(session.User.ID)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
@@ -55,6 +55,10 @@ func (r *Router) getRouteHandlers(app *application.App) []RouteMaker {
 		}
 		return nil
 	}
+}
+
+func (r *Router) getRouteHandlers(app *application.App) []RouteMaker {
+	ensurePermissionFn := EnsurePermissionsFnFactory(r.RoleFetcher)
 
 	return []RouteMaker{
 		NewAuthHandler(app.Supabase, app.Store, app.Config, app.Logger),
