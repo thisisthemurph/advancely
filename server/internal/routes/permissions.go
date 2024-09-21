@@ -47,7 +47,7 @@ func (h PermissionsHandler) MakeRoutes(e *echo.Group) {
 	roleGroup := group.Group("/role")
 	roleGroup.GET("/:roleId", h.handleGetRoleWithPermissions())
 	roleGroup.GET("", h.handleListRolesWithPermissions())
-	roleGroup.POST("", h.handleCreateRole())
+	roleGroup.POST("", h.HandleCreateRole())
 	roleGroup.PUT("/:roleId", h.handleUpdateRole())
 	roleGroup.DELETE("/:roleId", h.handleDeleteRole())
 
@@ -92,12 +92,12 @@ func (h PermissionsHandler) handleListRolesWithPermissions() echo.HandlerFunc {
 	}
 }
 
-func (h PermissionsHandler) handleCreateRole() echo.HandlerFunc {
-	type CreateRoleRequest struct {
-		Name        string `json:"name" validate:"required"`
-		Description string `json:"description" validate:"required"`
-	}
+type CreateRoleRequest struct {
+	Name        string `json:"name" validate:"required"`
+	Description string `json:"description" validate:"required"`
+}
 
+func (h PermissionsHandler) HandleCreateRole() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		session := auth.CurrentUser(c)
 		if err := h.EnsurePermission(c, security.PermissionCreateRole); err != nil {
