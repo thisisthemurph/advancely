@@ -53,19 +53,21 @@ jobs:
     name: Run server tests
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        go-version: ["1.23", "stable"]
-      fail-fast: true
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Start Supabase
+        run: supabase start
+        working-directory: server
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: "1.23"
 
       - name: Install dependencies
         run: go mod tidy
