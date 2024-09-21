@@ -47,7 +47,7 @@ type AuthHandler struct {
 
 func (h AuthHandler) MakeRoutes(e *echo.Group) {
 	group := e.Group("/auth")
-	group.POST("/login", h.handleLogin())
+	group.POST("/login", h.HandleLogin())
 	group.POST("/signup", h.handleSignup())
 	group.POST("/logout", h.handleLogout())
 	group.POST("/confirm-email", h.handleVerifyEmailVerificationComplete())
@@ -68,14 +68,14 @@ func (h AuthHandler) handleLogout() echo.HandlerFunc {
 	}
 }
 
-func (h AuthHandler) handleLogin() echo.HandlerFunc {
-	type Request struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+type LoginRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
 
+func (h AuthHandler) HandleLogin() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var req Request
+		var req LoginRequest
 		if err := validation.BindAndValidate(c, &req); err != nil {
 			h.Logger.Error("failed binding/validating login request", "error", err)
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -94,12 +94,18 @@ func (h AuthHandler) handleLogin() echo.HandlerFunc {
 
 		user, err := h.UserStore.User(token.User.ID)
 		if err != nil {
+			if errors.Is(err, store.ErrUserNotFound) {
+				return echo.NewHTTPError(http.StatusBadRequest, store.ErrUserNotFound)
+			}
 			h.Logger.Error("failed getting user from store", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}
 
 		company, err := h.CompanyStore.Company(user.CompanyID)
 		if err != nil {
+			if errors.Is(err, store.ErrCompanyNotFound) {
+				return echo.NewHTTPError(http.StatusBadRequest, store.ErrCompanyNotFound)
+			}
 			h.Logger.Error("failed getting company from store", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError)
 		}

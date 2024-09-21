@@ -1,7 +1,9 @@
 package tests
 
 import (
+	"advancely/internal/application"
 	"advancely/pkg/migrator"
+	"advancely/pkg/sbext"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 	"github.com/supabase-community/supabase-go"
@@ -20,6 +22,14 @@ func NewTestSupabaseClient(t *testing.T) *supabase.Client {
 	sb, err := supabase.NewClient(SupabaseURL, SupabasePublicKey, nil)
 	require.NoError(t, err)
 	return sb
+}
+
+func NewTestSupabaseExtended(t *testing.T) *sbext.SupabaseExtended {
+	config := application.SupabaseConfig{
+		URL:       SupabaseURL,
+		PublicKey: SupabasePublicKey,
+	}
+	return sbext.NewSupabaseExtended(NewTestSupabaseClient(t), config)
 }
 
 func SetUpTestDatabase(t *testing.T) *sqlx.DB {
