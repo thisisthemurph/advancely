@@ -13,7 +13,7 @@ import (
 func setUpTestAdminUserAndCompany(t *testing.T) (*sqlx.DB, types.User, uuid.UUID) {
 	db := tests.SetUpTestDatabase(t)
 	sb := tests.NewTestSupabaseClient(t)
-	user := tests.SignUpAdminUser(t, sb, db)
+	user := tests.CreateAdminUser(t, sb, db)
 	companyId := tests.CreateTestCompany(t, db, user.ID)
 	return db, user, companyId
 }
