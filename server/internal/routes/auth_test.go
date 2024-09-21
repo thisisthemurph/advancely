@@ -8,7 +8,6 @@ import (
 	"advancely/internal/tests"
 	"encoding/json"
 	"github.com/jmoiron/sqlx"
-	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
@@ -78,7 +77,7 @@ func TestAuthLoginWithInvalidRequest(t *testing.T) {
 	db := tests.SetUpTestDatabase(t)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, rec := tests.NewRequestRecorder(t, http.MethodPost, "/login", tc.payload)
+			c, _ := tests.NewRequestRecorder(t, http.MethodPost, "/login", tc.payload)
 
 			handler := newTestAuthHandler(t, db)
 			err := handler.HandleLogin()(c)
@@ -86,11 +85,7 @@ func TestAuthLoginWithInvalidRequest(t *testing.T) {
 				c.Error(err)
 			}
 
-			require.Error(t, err)
-			httpErr, ok := err.(*echo.HTTPError)
-			require.True(t, ok, "expected echo.HTTPError")
-			require.Equal(t, http.StatusBadRequest, httpErr.Code)
-			require.Equal(t, http.StatusBadRequest, rec.Code)
+			assertHTTPError(t, err, http.StatusBadRequest, "")
 		})
 	}
 }
@@ -105,11 +100,7 @@ func TestAuthLoginWhenUserDoesNotExist(t *testing.T) {
 	handler := newTestAuthHandler(t, db)
 	err := handler.HandleLogin()(c)
 
-	require.Error(t, err)
-	httpErr, ok := err.(*echo.HTTPError)
-	require.True(t, ok, "expected echo.HTTPError")
-	require.Equal(t, http.StatusBadRequest, httpErr.Code)
-	require.Equal(t, "Invalid login credentials", httpErr.Message)
+	assertHTTPError(t, err, http.StatusBadRequest, "Invalid login credentials")
 }
 
 func TestAuthLoginWhenCompanyAndProfileDoesNotExist(t *testing.T) {
@@ -125,9 +116,5 @@ func TestAuthLoginWhenCompanyAndProfileDoesNotExist(t *testing.T) {
 	handler := newTestAuthHandler(t, db)
 	err := handler.HandleLogin()(c)
 
-	require.Error(t, err)
-	httpErr, ok := err.(*echo.HTTPError)
-	require.True(t, ok, "expected echo.HTTPError")
-	require.Equal(t, http.StatusBadRequest, httpErr.Code)
-	require.Equal(t, store.ErrUserNotFound, httpErr.Message)
+	assertHTTPError(t, err, http.StatusBadRequest, store.ErrUserNotFound)
 }
