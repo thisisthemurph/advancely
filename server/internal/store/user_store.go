@@ -80,7 +80,7 @@ func (s *PostgresUserStore) Users(companyID uuid.UUID) ([]model.UserProfile, err
 		where p.company_id = $1;`
 
 	if err := s.Select(&uu, query, companyID); err != nil {
-		return []model.UserProfile{}, fmt.Errorf("error getting users: %w", err)
+		return []model.UserProfile{}, err
 	}
 	return uu, nil
 }

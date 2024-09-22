@@ -35,6 +35,7 @@ type UsersHandler struct {
 
 func (h UsersHandler) MakeRoutes(e *echo.Group) {
 	group := e.Group("/user")
+	group.GET("", h.HandleListUsers())
 	group.POST("", h.HandleCreateNewUser())
 }
 
@@ -44,7 +45,22 @@ type NewUserRequest struct {
 	Email     string `json:"email" validation:"required,email"`
 }
 
+func (h UsersHandler) HandleListUsers() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		session := auth.CurrentUser(c)
+		users, err := h.UserStore.Users(session.Company.ID)
+		if err != nil {
+			h.Logger.Error("error listing users", "error", err)
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+
+		res := NewPagedResponse(c, users)
+		return c.JSON(http.StatusOK, res)
+	}
+}
+
 // HandleCreateNewUser adds a user to the company and sends an invitation email.
+// A record is also added to the public.profiles table for the user.
 func (h UsersHandler) HandleCreateNewUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		session := auth.CurrentUser(c)
