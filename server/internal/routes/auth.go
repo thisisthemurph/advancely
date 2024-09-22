@@ -1,6 +1,12 @@
 package routes
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+
 	"advancely/internal/application"
 	"advancely/internal/auth"
 	"advancely/internal/model"
@@ -8,11 +14,6 @@ import (
 	"advancely/internal/store"
 	"advancely/internal/validation"
 	"advancely/pkg/sbext"
-	"context"
-	"errors"
-	"fmt"
-	"log/slog"
-	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -51,7 +52,7 @@ func (h AuthHandler) MakeRoutes(e *echo.Group) {
 	group.POST("/signup", h.handleSignup())
 	group.POST("/logout", h.handleLogout())
 	group.POST("/confirm-email", h.handleVerifyEmailVerificationComplete())
-	group.POST("/reset-password", h.handleTriggerPasswordReset())
+	group.POST("/reset-password", h.HandleTriggerPasswordReset())
 	group.POST("/reset-password/confirm", h.handleConfirmPasswordReset())
 }
 
@@ -279,15 +280,15 @@ func (h AuthHandler) handleVerifyEmailVerificationComplete() echo.HandlerFunc {
 	}
 }
 
-func (h AuthHandler) handleTriggerPasswordReset() echo.HandlerFunc {
-	type request struct {
-		Email string `json:"email" validate:"required,email"`
-	}
+type TriggerPasswordResetRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
 
+func (h AuthHandler) HandleTriggerPasswordReset() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 
-		var req request
+		var req TriggerPasswordResetRequest
 		if err := validation.BindAndValidate(c, &req); err != nil {
 			return err
 		}
@@ -301,15 +302,19 @@ func (h AuthHandler) handleTriggerPasswordReset() echo.HandlerFunc {
 	}
 }
 
-func (h AuthHandler) handleConfirmPasswordReset() echo.HandlerFunc {
-	type request struct {
-		OTP         string `json:"otp"`
-		Email       string `json:"email"`
-		NewPassword string `json:"password"`
-	}
+type OneTimePassword struct {
+	OTP string `json:"otp"`
+}
 
+type ConfirmPasswordResetRequest struct {
+	OneTimePassword
+	Email       string `json:"email"`
+	NewPassword string `json:"password"`
+}
+
+func (h AuthHandler) handleConfirmPasswordReset() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var req request
+		var req ConfirmPasswordResetRequest
 		if err := validation.BindAndValidate(c, &req); err != nil {
 			return err
 		}
