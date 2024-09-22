@@ -47,10 +47,11 @@ type UserStore interface {
 	User(id uuid.UUID) (model.UserProfile, error)
 	// BaseUserByEmail returns the auth.users user associated with the given email.
 	BaseUserByEmail(email string) (model.User, error)
+	Exists(email string) (bool, error)
 	// Users returns a slice of all users.
 	Users(companyID uuid.UUID) ([]model.UserProfile, error)
 	// CreateProfile creates a record in the profiles table.
-	CreateProfile(user *model.UserProfile) error
+	CreateProfile(req CreateProfileRequest) (model.UserProfile, error)
 	UpdateUser(user *model.UserProfile) error
 	DeleteUser(id uuid.UUID) error
 }

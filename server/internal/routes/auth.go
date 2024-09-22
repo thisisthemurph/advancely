@@ -176,18 +176,15 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 		return company, nil
 	}
 
-	getOrCreateUserProfile := func(user model.UserProfile) (model.UserProfile, error) {
-		existingUser, err := h.UserStore.User(user.ID)
+	getOrCreateUserProfile := func(user store.CreateProfileRequest) (model.UserProfile, error) {
+		existingUser, err := h.UserStore.User(user.UserID)
 		if err == nil {
 			return existingUser, nil
 		}
 		if !errors.Is(err, store.ErrUserNotFound) {
 			return model.UserProfile{}, err
 		}
-		if err := h.UserStore.CreateProfile(&user); err != nil {
-			return model.UserProfile{}, err
-		}
-		return user, nil
+		return h.UserStore.CreateProfile(user)
 	}
 
 	return func(c echo.Context) error {
@@ -224,12 +221,11 @@ func (h AuthHandler) handleSignup() echo.HandlerFunc {
 
 		// CreateCompany the initial admin user profile
 
-		profile, err := getOrCreateUserProfile(model.UserProfile{
-			ID:        user.ID,
+		profile, err := getOrCreateUserProfile(store.CreateProfileRequest{
+			UserID:    user.ID,
 			CompanyID: company.ID,
 			FirstName: form.UserFirstName,
 			LastName:  form.UserLastName,
-			Email:     user.Email,
 			IsAdmin:   true,
 		})
 		if err != nil {
