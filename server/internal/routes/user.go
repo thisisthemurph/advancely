@@ -1,16 +1,16 @@
 package routes
 
 import (
-	"advancely/internal/auth"
-	"advancely/internal/validation"
-	"github.com/supabase-community/gotrue-go/types"
-	"github.com/supabase-community/supabase-go"
 	"log/slog"
 	"net/http"
 
+	"advancely/internal/auth"
 	"advancely/internal/store"
+	"advancely/internal/validation"
 
 	"github.com/labstack/echo/v4"
+	"github.com/supabase-community/gotrue-go/types"
+	"github.com/supabase-community/supabase-go"
 )
 
 func NewUsersHandler(
@@ -39,9 +39,9 @@ func (h UsersHandler) MakeRoutes(e *echo.Group) {
 }
 
 type NewUserRequest struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
+	FirstName string `json:"firstName" validation:"required"`
+	LastName  string `json:"lastName" validation:"required"`
+	Email     string `json:"email" validation:"required,email"`
 }
 
 // HandleCreateNewUser adds a user to the company and sends an invitation email.
