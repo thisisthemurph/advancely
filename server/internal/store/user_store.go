@@ -60,6 +60,15 @@ func (s *PostgresUserStore) BaseUserByEmail(email string) (model.User, error) {
 	return u, nil
 }
 
+func (s *PostgresUserStore) Exists(email string) (bool, error) {
+	var exists bool
+	stmt := "select exists(select 1 from auth.users where email = $1);"
+	if err := s.Get(&exists, stmt, email); err != nil {
+		return exists, err
+	}
+	return exists, nil
+}
+
 func (s *PostgresUserStore) Users(companyID uuid.UUID) ([]model.UserProfile, error) {
 	var uu []model.UserProfile
 	query := `
@@ -71,21 +80,31 @@ func (s *PostgresUserStore) Users(companyID uuid.UUID) ([]model.UserProfile, err
 		where p.company_id = $1;`
 
 	if err := s.Select(&uu, query, companyID); err != nil {
-		return []model.UserProfile{}, fmt.Errorf("error getting users: %w", err)
+		return []model.UserProfile{}, err
 	}
 	return uu, nil
 }
 
-func (s *PostgresUserStore) CreateProfile(user *model.UserProfile) error {
+type CreateProfileRequest struct {
+	UserID    uuid.UUID
+	CompanyID uuid.UUID
+	FirstName string
+	LastName  string
+	IsAdmin   bool
+}
+
+func (s *PostgresUserStore) CreateProfile(req CreateProfileRequest) (model.UserProfile, error) {
 	query := `
 		insert into public.profiles (id, company_id, first_name, last_name, is_admin)
 		values ($1, $2, $3, $4, $5)
 		returning id, company_id, first_name, last_name, is_admin, created_at, updated_at;`
 
-	if err := s.Get(user, query, user.ID, user.CompanyID, user.FirstName, user.LastName, user.IsAdmin); err != nil {
-		return fmt.Errorf("error creating profile: %w", err)
+	var profile model.UserProfile
+	if err := s.Get(&profile, query, req.UserID, req.CompanyID, req.FirstName, req.LastName, req.IsAdmin); err != nil {
+		// TODO: Check if the profile already exists
+		return model.UserProfile{}, fmt.Errorf("error creating profile: %w", err)
 	}
-	return nil
+	return profile, nil
 }
 
 func (s *PostgresUserStore) UpdateUser(user *model.UserProfile) error {

@@ -36,14 +36,14 @@ func (u *User) SupabaseUser() *types.User {
 
 // UserProfile represents a combination columns from the auth.users and public.profile tables
 type UserProfile struct {
-	ID        uuid.UUID  `db:"id"`
-	CompanyID uuid.UUID  `db:"company_id"`
-	FirstName string     `db:"first_name"`
-	LastName  string     `db:"last_name"`
-	Email     string     `db:"email"`
-	IsAdmin   bool       `db:"is_admin"`
-	CreatedAt time.Time  `db:"created_at"`
-	UpdatedAt *time.Time `db:"updated_at"`
+	ID        uuid.UUID  `db:"id" json:"id"`
+	CompanyID uuid.UUID  `db:"company_id" json:"companyId"`
+	FirstName string     `db:"first_name" json:"firstName"`
+	LastName  string     `db:"last_name" json:"lastName"`
+	Email     string     `db:"email" json:"email"`
+	IsAdmin   bool       `db:"is_admin" json:"-"`
+	CreatedAt time.Time  `db:"created_at" json:"createdAt"`
+	UpdatedAt *time.Time `db:"updated_at" json:"updatedAt"`
 }
 
 type Company struct {

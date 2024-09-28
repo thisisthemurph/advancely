@@ -64,6 +64,7 @@ func (r *Router) getRouteHandlers(app *application.App) []RouteMaker {
 		NewAuthHandler(app.Supabase, app.Store, app.Config, app.Logger),
 		NewPermissionsHandler(app.Store, app.Config, app.Logger, ensurePermissionFn),
 		NewCompaniesHandler(app.Store, app.Logger, ensurePermissionFn),
+		NewUsersHandler(app.Store, app.Supabase, ensurePermissionFn, app.Logger),
 	}
 }
 
