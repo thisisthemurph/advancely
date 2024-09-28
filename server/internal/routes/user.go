@@ -133,6 +133,11 @@ func (h UsersHandler) HandleCreateNewUser() echo.HandlerFunc {
 			FirstName: req.FirstName,
 			LastName:  req.LastName,
 		})
+
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError)
+		}
+
 		profile.Email = req.Email
 		return c.JSON(http.StatusCreated, profile)
 	}

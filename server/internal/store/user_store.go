@@ -101,6 +101,7 @@ func (s *PostgresUserStore) CreateProfile(req CreateProfileRequest) (model.UserP
 
 	var profile model.UserProfile
 	if err := s.Get(&profile, query, req.UserID, req.CompanyID, req.FirstName, req.LastName, req.IsAdmin); err != nil {
+		// TODO: Check if the profile already exists
 		return model.UserProfile{}, fmt.Errorf("error creating profile: %w", err)
 	}
 	return profile, nil
