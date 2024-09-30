@@ -36,7 +36,7 @@ func Test_Map(t *testing.T) {
 			input: []int{-1, 2, 3, 4, 5},
 			want:  []int{0, 0, 0, 0, 0},
 			function: func(x int) int {
-				return x - x
+				return x + 0 - x
 			},
 		},
 	}
