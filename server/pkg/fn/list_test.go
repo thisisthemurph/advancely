@@ -865,7 +865,7 @@ func TestList_Map(t *testing.T) {
 		name     string
 		elements []person
 		expected []person
-		f        fn.MapFunc[person]
+		f        func(person) person
 	}{
 		{
 			name:     "empty list returns empty List",

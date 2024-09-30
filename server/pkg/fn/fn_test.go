@@ -1,13 +1,14 @@
 package fn_test
 
 import (
+	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
 
 	"advancely/pkg/fn"
 )
 
-func Test_Map_WithInt(t *testing.T) {
+func Test_Map(t *testing.T) {
 	testCases := []struct {
 		name     string
 		input    []int
@@ -50,7 +51,20 @@ func Test_Map_WithInt(t *testing.T) {
 	}
 }
 
-func Test_Filter_WithInt(t *testing.T) {
+func Test_Select(t *testing.T) {
+	people := []person{
+		{
+			Name: "Mike",
+			Age:  34,
+		},
+	}
+
+	result := fn.Select(people, func(p person) string { return p.Name })
+
+	assert.Equal(t, result, []string{"Mike"})
+}
+
+func Test_Filter(t *testing.T) {
 	testCases := []struct {
 		name     string
 		input    []int
@@ -93,7 +107,7 @@ func Test_Filter_WithInt(t *testing.T) {
 	}
 }
 
-func Test_Reduce_WithInt(t *testing.T) {
+func Test_Reduce(t *testing.T) {
 	testCases := []struct {
 		name         string
 		input        []int
